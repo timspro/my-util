@@ -1,0 +1,28 @@
+{
+  "name": "@tim-code/my-util",
+  "version": "0.0.1",
+  "description": "",
+  "type": "module",
+  "private": true,
+  "author": "Tim Sprowl",
+  "license": "MIT",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --no-warnings --experimental-vm-modules node_modules/.bin/jest"
+  },
+  "eslintConfig": {
+    "root": true,
+    "extends": [
+      "@tim-code"
+    ]
+  },
+  "devDependencies": {
+    "@tim-code/eslint-config": "^1.1.7",
+    "@jest/globals": "^29.7.0",
+    "@types/node": ">=20 <21",
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "transform": {}
+  }
+}
