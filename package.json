@@ -3,8 +3,7 @@
   "version": "0.0.1",
   "description": "",
   "type": "module",
-  "private": true,
-  "author": "Tim Sprowl",
+  "author": "",
   "license": "MIT",
   "main": "src/index.js",
   "scripts": {
