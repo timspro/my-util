@@ -27,3 +27,22 @@ export function chunk(array, chunkSize = array.length) {
 export function unique(array) {
   return [...new Set(array)]
 }
+
+/**
+ * Get the largest element in an array using > operator.
+ * @param {Array} array
+ * @param {Function=} callback If specified, uses the result of calling the callback on the element for comparison instead.
+ *  (element, index, array) => comparable
+ * @param {any} element Largest element
+ */
+export function largest(array, callback = (_) => _) {
+  let found
+  for (let i = 0; i < array.length; i++) {
+    const element = array[i]
+    const result = callback(element, i, array)
+    if (found === undefined || found < result) {
+      found = result
+    }
+  }
+  return found
+}
