@@ -24,6 +24,9 @@ export async function getJSON(path) {
  * @returns {Object|Array}
  */
 export async function getCompressedJSON(path) {
+  if (!path.endsWith(".gz")) {
+    throw new Error("path does not suggest a compressed file")
+  }
   const buffer = await readFile(path)
   const uncompressed = await gunzip(buffer)
   return JSON.parse(uncompressed.toString())

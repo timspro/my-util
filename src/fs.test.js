@@ -42,6 +42,9 @@ describe("getCompressedJSON", () => {
     expect(readFileMock).toHaveBeenCalledWith("bar.gz")
     expect(gunzipMock).toHaveBeenCalled()
   })
+  it("throws for bad filename", async () => {
+    await expect(getCompressedJSON("bar")).rejects.toThrow(/a compressed file/u)
+  })
 })
 
 describe("pathExists", () => {
