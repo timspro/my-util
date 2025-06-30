@@ -30,3 +30,43 @@ export function getEasternTime({ days = 0, floorMinute = false } = {}) {
   const datetime = `${date} ${time}`
   return { timestamp, date, time, minute, datetime }
 }
+
+/**
+ * Checks if the string represents a valid YYYY-MM-DD date.
+ * This will return false for dates like "2024-02-31".
+ * @param {string} string
+ * @returns {boolean}
+ */
+export function isDate(string) {
+  const match = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/u.exec(string)
+  if (!match) {
+    return false
+  }
+  const [, year, month, day] = match.map(Number)
+  const date = new Date(`${string}T00:00:00Z`)
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() + 1 === month &&
+    date.getUTCDate() === day
+  )
+}
+
+/**
+ * Checks if the string represent a valid HH:mm:ss time.
+ * @param {string} string
+ * @returns {boolean}
+ */
+export function isTime(string) {
+  return /^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/u.test(string)
+}
+
+/**
+ * Checks if a number is a Unix timestamp (i.e. in seconds).
+ * @param {number} ts
+ * @param {Object} $1
+ * @param {number} $1.max Maximum value for timestamp to allow - default is up to ~2286-11-20; this allows catching ms timestamps
+ * @returns {boolean}
+ */
+export function isUnixTimestamp(ts, { max = 9999999999 } = {}) {
+  return Number.isInteger(ts) && ts >= 0 && ts <= max
+}

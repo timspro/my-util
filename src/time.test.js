@@ -1,5 +1,5 @@
 import { describe, expect, test } from "@jest/globals"
-import { getEasternTime } from "./time.js"
+import { getEasternTime, isDate, isTime, isUnixTimestamp } from "./time.js"
 
 describe("getEasternTime", () => {
   test("returns correct structure and types", () => {
@@ -44,5 +44,79 @@ describe("getEasternTime", () => {
     expect(def.time).toEqual(explicit.time)
     expect(def.timestamp).toEqual(explicit.timestamp)
     expect(def.datetime).toEqual(explicit.datetime)
+  })
+})
+
+describe("isDate", () => {
+  test("returns true for valid YYYY-MM-DD dates", () => {
+    expect(isDate("2024-06-01")).toBe(true)
+    expect(isDate("1999-12-31")).toBe(true)
+  })
+
+  test("returns false for invalid dates (e.g., 2024-02-31)", () => {
+    expect(isDate("2024-02-31")).toBe(false)
+    expect(isDate("2023-04-31")).toBe(false)
+  })
+
+  test("returns false for invalid formats", () => {
+    expect(isDate("2024/06/01")).toBe(false)
+    expect(isDate("06-01-2024")).toBe(false)
+    expect(isDate("2024-6-1")).toBe(false)
+    expect(isDate("20240601")).toBe(false)
+    expect(isDate("abcd-ef-gh")).toBe(false)
+  })
+
+  test("returns false for impossible months and days", () => {
+    expect(isDate("2024-00-10")).toBe(false)
+    expect(isDate("2024-13-10")).toBe(false)
+    expect(isDate("2024-01-00")).toBe(false)
+    expect(isDate("2024-01-32")).toBe(false)
+  })
+
+  test("returns true for leap day", () => {
+    expect(isDate("2024-02-29")).toBe(true)
+    expect(isDate("2023-02-29")).toBe(false)
+  })
+})
+
+describe("isTime", () => {
+  test("returns true for valid HH:mm:ss times", () => {
+    expect(isTime("00:00:00")).toBe(true)
+    expect(isTime("23:59:59")).toBe(true)
+    expect(isTime("12:34:56")).toBe(true)
+  })
+
+  test("returns false for invalid times", () => {
+    expect(isTime("24:00:00")).toBe(false)
+    expect(isTime("12:60:00")).toBe(false)
+    expect(isTime("12:00:60")).toBe(false)
+    expect(isTime("1:00:00")).toBe(false)
+    expect(isTime("12:0:00")).toBe(false)
+    expect(isTime("12:00:0")).toBe(false)
+    expect(isTime("12:00")).toBe(false)
+    expect(isTime("120000")).toBe(false)
+    expect(isTime("ab:cd:ef")).toBe(false)
+  })
+})
+
+describe("isUnixTimestamp", () => {
+  test("returns true for valid unix timestamps in seconds", () => {
+    expect(isUnixTimestamp(0)).toBe(true)
+    expect(isUnixTimestamp(1700000000)).toBe(true)
+    expect(isUnixTimestamp(9999999999)).toBe(true)
+  })
+
+  test("returns false for negative or non-integer or too large values", () => {
+    expect(isUnixTimestamp(-1)).toBe(false)
+    expect(isUnixTimestamp(1.5)).toBe(false)
+    expect(isUnixTimestamp(10000000000)).toBe(false)
+    expect(isUnixTimestamp(NaN)).toBe(false)
+    expect(isUnixTimestamp(Infinity)).toBe(false)
+  })
+
+  test("respects custom max option", () => {
+    expect(isUnixTimestamp(100, { max: 50 })).toBe(false)
+    expect(isUnixTimestamp(50, { max: 50 })).toBe(true)
+    expect(isUnixTimestamp(51, { max: 50 })).toBe(false)
   })
 })
