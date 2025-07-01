@@ -1,3 +1,6 @@
+import { parseIntSafe } from "./array.js"
+import { mod } from "./math.js"
+
 /**
  * Gets various ways of representing the current time in EDT. Floors to nearest second by default.
  * @param {Object} $1
@@ -62,6 +65,7 @@ export function isTime(string) {
 
 /**
  * Checks if a number is a Unix timestamp (i.e. in seconds).
+ * Would not validate timestamps set very far into the future.
  * @param {number} ts
  * @param {Object} $1
  * @param {number} $1.max Maximum value for timestamp to allow - default is up to ~2286-11-20; this allows catching ms timestamps
@@ -69,4 +73,30 @@ export function isTime(string) {
  */
 export function isUnixTimestamp(ts, { max = 9999999999 } = {}) {
   return Number.isInteger(ts) && ts >= 0 && ts <= max
+}
+
+/**
+ * Add an amount of time to a time string.
+ * @param {string} timeString HH:mm:ss or HH:mm; parsable numbers separated by :
+ * @param {Object} $1
+ * @param {number} $1.hours Hours to add to time string
+ * @param {number} $1.minutes Minutes to add to time string
+ * @returns {string} HH:mm:ss
+ */
+export function addTime(timeString, { minutes = 0, hours = 0 }) {
+  let [hour, minute, second = 0] = timeString.split(":").map(parseIntSafe)
+  hour = mod(hour + hours, 24)
+  minute += minutes
+  while (minute >= 60) {
+    hour = mod(hour + 1, 24)
+    minute -= 60
+  }
+  while (minute < 0) {
+    hour = mod(hour - 1, 24)
+    minute += 60
+  }
+  const newTime = [hour, minute, second]
+    .map((number) => `${number}`.padStart(2, "0"))
+    .join(":")
+  return newTime
 }

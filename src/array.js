@@ -92,6 +92,15 @@ export function descending(key) {
   }
 }
 
+/**
+ * Parse an integer in base 10. Safe to use for array.map() since it only takes one argument and ignores the rest.
+ * @param {string} number
+ * @returns {number} Integer
+ */
+export function parseIntSafe(number) {
+  return parseInt(number, 10)
+}
+
 // not sure how far we want to go down "key" rabbit hole:
 // export function sum(array, key) {}
 // or maybe

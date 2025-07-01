@@ -1,5 +1,6 @@
 export * from "./array.js"
 export * from "./fs.js"
+export * from "./math.js"
 export * from "./promise.js"
 export * from "./run.js"
 export * from "./time.js"

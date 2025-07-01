@@ -1,5 +1,5 @@
 import { describe, expect, test } from "@jest/globals"
-import { getEasternTime, isDate, isTime, isUnixTimestamp } from "./time.js"
+import { addTime, getEasternTime, isDate, isTime, isUnixTimestamp } from "./time.js"
 
 describe("getEasternTime", () => {
   test("returns correct structure and types", () => {
@@ -118,5 +118,64 @@ describe("isUnixTimestamp", () => {
     expect(isUnixTimestamp(100, { max: 50 })).toBe(false)
     expect(isUnixTimestamp(50, { max: 50 })).toBe(true)
     expect(isUnixTimestamp(51, { max: 50 })).toBe(false)
+  })
+})
+
+describe("addTime", () => {
+  test("adds minutes within the same hour", () => {
+    expect(addTime("12:30:00", { minutes: 15 })).toBe("12:45:00")
+    expect(addTime("12:30", { minutes: 15 })).toBe("12:45:00")
+  })
+
+  test("adds minutes with hour rollover", () => {
+    expect(addTime("12:50:00", { minutes: 15 })).toBe("13:05:00")
+    expect(addTime("23:50:00", { minutes: 15 })).toBe("00:05:00")
+  })
+
+  test("subtracts minutes with hour underflow", () => {
+    expect(addTime("12:10:00", { minutes: -15 })).toBe("11:55:00")
+    expect(addTime("00:10:00", { minutes: -15 })).toBe("23:55:00")
+  })
+
+  test("adds hours with 24-hour rollover", () => {
+    expect(addTime("22:15:00", { hours: 3 })).toBe("01:15:00")
+    expect(addTime("00:00:00", { hours: 24 })).toBe("00:00:00")
+    expect(addTime("23:59:59", { hours: 1 })).toBe("00:59:59")
+  })
+
+  test("subtracts hours with 24-hour underflow", () => {
+    expect(addTime("01:15:00", { hours: -3 })).toBe("22:15:00")
+    expect(addTime("00:00:00", { hours: -24 })).toBe("00:00:00")
+    expect(addTime("00:59:59", { hours: -1 })).toBe("23:59:59")
+  })
+
+  test("handles both hours and minutes together", () => {
+    expect(addTime("22:30:00", { hours: 2, minutes: 45 })).toBe("01:15:00")
+    expect(addTime("01:15:00", { hours: -2, minutes: -30 })).toBe("22:45:00")
+  })
+
+  test("pads single digit hours, minutes, seconds", () => {
+    expect(addTime("1:2:3", { hours: 0, minutes: 0 })).toBe("01:02:03")
+    expect(addTime("9:8", { hours: 0, minutes: 0 })).toBe("09:08:00")
+  })
+
+  // Edge case: negative minutes that require multiple hour underflows
+  test("handles large negative minutes", () => {
+    expect(addTime("05:10:00", { minutes: -130 })).toBe("03:00:00")
+  })
+
+  // Edge case: large positive minutes that require multiple hour rollovers
+  test("handles large positive minutes", () => {
+    expect(addTime("05:10:00", { minutes: 130 })).toBe("07:20:00")
+  })
+
+  // Edge case: input with seconds omitted
+  test("handles input with no seconds", () => {
+    expect(addTime("12:34", { minutes: 0 })).toBe("12:34:00")
+  })
+
+  // Edge case: input with all zeros
+  test("handles midnight", () => {
+    expect(addTime("00:00:00", { hours: 0, minutes: 0 })).toBe("00:00:00")
   })
 })
