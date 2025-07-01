@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-syntax */
 import { describe, expect, it, jest } from "@jest/globals"
 
-const { chunk, unique, mutateValues, ascending, descending } = await import("./array.js")
+const { chunk, unique, mutateValues, ascending, descending, via } = await import("./array.js")
 
 describe("chunk", () => {
   it("splits array into chunks of specified size", () => {
@@ -185,5 +185,31 @@ describe("descending", () => {
     const arr = [{ v: 2 }, {}, { v: 3 }]
     arr.sort(descending("v"))
     expect(arr.map((o) => o.v)).toEqual([3, 2, undefined])
+  })
+})
+
+describe("via", () => {
+  it("returns a function that accesses the given key", () => {
+    const getFoo = via("foo")
+    expect(getFoo({ foo: 42 })).toBe(42)
+    expect(getFoo({ foo: "bar" })).toBe("bar")
+  })
+
+  it("returns undefined if the key does not exist", () => {
+    const getX = via("x")
+    expect(getX({})).toBeUndefined()
+    expect(getX({ y: 1 })).toBeUndefined()
+  })
+
+  it("works with numeric keys", () => {
+    const get0 = via(0)
+    expect(get0([10, 20])).toBe(10)
+    expect(get0({ 0: "zero" })).toBe("zero")
+  })
+
+  it("returns undefined if object is missing", () => {
+    const getFoo = via("foo")
+    expect(() => getFoo(undefined)).toThrow(TypeError)
+    expect(() => getFoo(null)).toThrow(TypeError)
   })
 })

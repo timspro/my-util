@@ -1,4 +1,3 @@
-import { parseIntSafe } from "./array.js"
 import { mod } from "./math.js"
 
 /**
@@ -84,7 +83,7 @@ export function isUnixTimestamp(ts, { max = 9999999999 } = {}) {
  * @returns {string} HH:mm:ss
  */
 export function addTime(timeString, { minutes = 0, hours = 0 }) {
-  let [hour, minute, second = 0] = timeString.split(":").map(parseIntSafe)
+  let [hour, minute, second = 0] = timeString.split(":").map(Number)
   hour = mod(hour + hours, 24)
   minute += minutes
   while (minute >= 60) {

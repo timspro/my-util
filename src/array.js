@@ -93,13 +93,24 @@ export function descending(key) {
 }
 
 /**
- * Parse an integer in base 10. Safe to use for array.map() since it only takes one argument and ignores the rest.
- * @param {string} number
- * @returns {number} Integer
+ * Creates a function that accesses an object's value at key.
+ * @param {string} key
+ * @returns {any}
  */
-export function parseIntSafe(number) {
-  return parseInt(number, 10)
+export function via(key) {
+  return (object) => object[key]
 }
+
+// export function contains(template) {
+//   return (object) => {
+//     for (const key in template) {
+//       if (object[key] !== template[key]) {
+//         return false
+//       }
+//     }
+//     return true
+//   }
+// }
 
 // not sure how far we want to go down "key" rabbit hole:
 // export function sum(array, key) {}
