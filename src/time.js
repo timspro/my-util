@@ -3,18 +3,15 @@ import { mod } from "./math.js"
 /**
  * Gets various ways of representing the current time in EDT. Floors to nearest second by default.
  * @param {Object} $1
- * @param {number} $1.days An offset in days to the current time
- * @param {boolean} $1.floorMinute If true, floors to the nearest minute. If false, floors to the nearest second.
+ * @param {boolean=} $1.floorMinute If true, floors to the nearest minute. If false, floors to the nearest second.
+ * @param {number=} $1.timestamp Unix timestamp to use instead of current time.
  * @returns {Object} { timestamp, date, time, minute, datetime }
  */
-export function getEasternTime({ days = 0, floorMinute = false } = {}) {
-  const now = new Date()
-  if (days) {
-    now.setDate(now.getDate() + days)
+export function getEasternTime({ floorMinute = false, timestamp = undefined } = {}) {
+  if (!timestamp) {
+    timestamp = new Date().getTime() / 1000
   }
-  const timestamp = floorMinute
-    ? Math.floor(now.getTime() / 1000 / 60) * 60
-    : Math.floor(now.getTime() / 1000)
+  timestamp = floorMinute ? Math.floor(timestamp / 60) * 60 : Math.floor(timestamp)
   const string = new Date(timestamp * 1000).toLocaleString("en-US", {
     timeZone: "America/New_York",
     hour12: false,
@@ -98,4 +95,17 @@ export function addTime(timeString, { minutes = 0, hours = 0 }) {
     .map((number) => `${number}`.padStart(2, "0"))
     .join(":")
   return newTime
+}
+
+/**
+ * Adds a number of days to a date string.
+ * @param {string} dateString
+ * @param {number} days
+ * @returns {string}
+ */
+export function addDays(dateString, days = 0) {
+  const [year, month, day] = dateString.split("-").map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day))
+  date.setUTCDate(date.getUTCDate() + days)
+  return date.toISOString().slice(0, 10)
 }

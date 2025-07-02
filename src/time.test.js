@@ -1,6 +1,7 @@
 import { describe, expect, test } from "@jest/globals"
-import { addTime, getEasternTime, isDate, isTime, isUnixTimestamp } from "./time.js"
+import { addDays, addTime, getEasternTime, isDate, isTime, isUnixTimestamp } from "./time.js"
 
+// getEasternTime changed: removed "days" param, added "timestamp" param
 describe("getEasternTime", () => {
   test("returns correct structure and types", () => {
     const result = getEasternTime()
@@ -18,32 +19,65 @@ describe("getEasternTime", () => {
     expect(r2.timestamp).toBeLessThanOrEqual(r1.timestamp)
   })
 
-  test("adds days offset", () => {
-    const today = getEasternTime()
-    const tomorrow = getEasternTime({ days: 1 })
-    const [y, m, d] = today.date.split("-").map(Number)
-    const [y2, m2, d2] = tomorrow.date.split("-").map(Number)
-    expect(new Date(y2, m2 - 1, d2).getTime() - new Date(y, m - 1, d).getTime()).toBeCloseTo(
-      24 * 60 * 60 * 1000,
-      -2
-    )
+  test("uses provided timestamp and floors correctly", () => {
+    // 2024-06-01T12:34:56Z (UTC) = 1717245296
+    // EDT is UTC-4, so local time should be 08:34:56
+    const ts = 1717245296
+    const result = getEasternTime({ timestamp: ts })
+    expect(result.timestamp).toBe(ts)
+    expect(result.time.startsWith("08:34")).toBe(true)
+    // floorMinute should zero out seconds
+    const floored = getEasternTime({ timestamp: ts, floorMinute: true })
+    expect(floored.timestamp % 60).toBe(0)
+    expect(floored.time.endsWith(":00")).toBe(true)
   })
 
-  test("returns correct format for different days and floorMinute", () => {
-    const base = getEasternTime()
-    const plus2 = getEasternTime({ days: 2, floorMinute: true })
-    expect(plus2.date).not.toEqual(base.date)
-    expect(plus2.timestamp % 60).toBe(0)
-  })
-
-  // The following test ensures all code paths are covered, including when days=0 and floorMinute=false (the defaults).
   test("default parameters yield consistent output", () => {
     const def = getEasternTime()
-    const explicit = getEasternTime({ days: 0, floorMinute: false })
+    const explicit = getEasternTime({ floorMinute: false })
     expect(def.date).toEqual(explicit.date)
     expect(def.time).toEqual(explicit.time)
     expect(def.timestamp).toEqual(explicit.timestamp)
     expect(def.datetime).toEqual(explicit.datetime)
+  })
+
+  // DST boundary tests
+  test("handles DST start (spring forward) correctly", () => {
+    // In 2024, DST starts in US/Eastern at 2024-03-10 02:00:00 local time (clocks jump to 03:00:00)
+    // 2024-03-10T06:59:59Z = 1:59:59 EST (should be 01:59:59)
+    let ts = Date.UTC(2024, 2, 10, 6, 59, 59) / 1000
+    let r = getEasternTime({ timestamp: ts })
+    expect(r.date).toBe("2024-03-10")
+    expect(r.time).toBe("01:59:59")
+    // 2024-03-10T07:00:00Z = 3:00:00 EDT (should be 03:00:00)
+    ts = Date.UTC(2024, 2, 10, 7, 0, 0) / 1000
+    r = getEasternTime({ timestamp: ts })
+    expect(r.date).toBe("2024-03-10")
+    expect(r.time).toBe("03:00:00")
+  })
+
+  test("handles DST end (fall back) correctly", () => {
+    // In 2024, DST ends in US/Eastern at 2024-11-03 02:00:00 local time (clocks go back to 01:00:00)
+    // 2024-11-03T05:59:59Z = 01:59:59 EDT (should be 01:59:59)
+    let ts = Date.UTC(2024, 10, 3, 5, 59, 59) / 1000
+    let r = getEasternTime({ timestamp: ts })
+    expect(r.date).toBe("2024-11-03")
+    expect(r.time).toBe("01:59:59")
+    // 2024-11-03T06:00:00Z = 01:00:00 EST (should be 01:00:00)
+    ts = Date.UTC(2024, 10, 3, 6, 0, 0) / 1000
+    r = getEasternTime({ timestamp: ts })
+    expect(r.date).toBe("2024-11-03")
+    expect(r.time).toBe("01:00:00")
+    // 2024-11-03T06:59:59Z = 01:59:59 EST (should be 01:59:59)
+    ts = Date.UTC(2024, 10, 3, 6, 59, 59) / 1000
+    r = getEasternTime({ timestamp: ts })
+    expect(r.date).toBe("2024-11-03")
+    expect(r.time).toBe("01:59:59")
+    // 2024-11-03T07:00:00Z = 02:00:00 EST (should be 02:00:00)
+    ts = Date.UTC(2024, 10, 3, 7, 0, 0) / 1000
+    r = getEasternTime({ timestamp: ts })
+    expect(r.date).toBe("2024-11-03")
+    expect(r.time).toBe("02:00:00")
   })
 })
 
@@ -177,5 +211,56 @@ describe("addTime", () => {
   // Edge case: input with all zeros
   test("handles midnight", () => {
     expect(addTime("00:00:00", { hours: 0, minutes: 0 })).toBe("00:00:00")
+  })
+})
+
+describe("addDays", () => {
+  test("adds days within the same month", () => {
+    expect(addDays("2024-06-01", 5)).toBe("2024-06-06")
+    expect(addDays("2024-06-10", 0)).toBe("2024-06-10")
+  })
+
+  test("adds days with month rollover", () => {
+    expect(addDays("2024-06-28", 5)).toBe("2024-07-03")
+  })
+
+  test("adds days with year rollover", () => {
+    expect(addDays("2024-12-30", 5)).toBe("2025-01-04")
+  })
+
+  test("subtracts days", () => {
+    expect(addDays("2024-06-10", -10)).toBe("2024-05-31")
+  })
+
+  test("handles leap years", () => {
+    expect(addDays("2024-02-28", 1)).toBe("2024-02-29")
+    expect(addDays("2024-02-28", 2)).toBe("2024-03-01")
+    expect(addDays("2023-02-28", 1)).toBe("2023-03-01")
+  })
+
+  test("handles negative result across year boundary", () => {
+    expect(addDays("2024-01-01", -1)).toBe("2023-12-31")
+  })
+
+  // DST boundary: adding days across US DST start (spring forward)
+  test("adds days across DST start (spring forward)", () => {
+    // DST starts in US/Eastern on 2024-03-10
+    // Adding 1 day to 2024-03-09 should yield 2024-03-10
+    expect(addDays("2024-03-09", 1)).toBe("2024-03-10")
+    // Adding 2 days to 2024-03-09 should yield 2024-03-11
+    expect(addDays("2024-03-09", 2)).toBe("2024-03-11")
+    // Subtracting 1 day from 2024-03-10 should yield 2024-03-09
+    expect(addDays("2024-03-10", -1)).toBe("2024-03-09")
+  })
+
+  // DST boundary: adding days across US DST end (fall back)
+  test("adds days across DST end (fall back)", () => {
+    // DST ends in US/Eastern on 2024-11-03
+    // Adding 1 day to 2024-11-02 should yield 2024-11-03
+    expect(addDays("2024-11-02", 1)).toBe("2024-11-03")
+    // Adding 2 days to 2024-11-02 should yield 2024-11-04
+    expect(addDays("2024-11-02", 2)).toBe("2024-11-04")
+    // Subtracting 1 day from 2024-11-03 should yield 2024-11-02
+    expect(addDays("2024-11-03", -1)).toBe("2024-11-02")
   })
 })
