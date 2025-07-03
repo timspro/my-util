@@ -1,5 +1,13 @@
 import { describe, expect, test } from "@jest/globals"
-import { addDays, addTime, getEasternTime, isDate, isTime, isUnixTimestamp } from "./time.js"
+import {
+  addDays,
+  addTime,
+  getDateRange,
+  getEasternTime,
+  isDate,
+  isTime,
+  isUnixTimestamp,
+} from "./time.js"
 
 // getEasternTime changed: removed "days" param, added "timestamp" param
 describe("getEasternTime", () => {
@@ -212,6 +220,12 @@ describe("addTime", () => {
   test("handles midnight", () => {
     expect(addTime("00:00:00", { hours: 0, minutes: 0 })).toBe("00:00:00")
   })
+
+  // New: test default parameters (no options argument)
+  test("handles missing options argument (all defaults)", () => {
+    expect(addTime("12:34:56")).toBe("12:34:56")
+    expect(addTime("05:10")).toBe("05:10:00")
+  })
 })
 
 describe("addDays", () => {
@@ -262,5 +276,50 @@ describe("addDays", () => {
     expect(addDays("2024-11-02", 2)).toBe("2024-11-04")
     // Subtracting 1 day from 2024-11-03 should yield 2024-11-02
     expect(addDays("2024-11-03", -1)).toBe("2024-11-02")
+  })
+})
+
+// New tests for getDateRange (newly exported function)
+describe("getDateRange", () => {
+  test("returns all dates between start and end inclusive", () => {
+    expect(getDateRange("2024-06-01", "2024-06-03")).toEqual([
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+    ])
+  })
+
+  test("returns just the start date if start equals end", () => {
+    expect(getDateRange("2024-06-01", "2024-06-01")).toEqual(["2024-06-01"])
+  })
+
+  test("returns empty array if start > end", () => {
+    expect(getDateRange("2024-06-03", "2024-06-01")).toEqual([])
+  })
+
+  test("respects limit option", () => {
+    expect(getDateRange("2024-06-01", "2024-06-10", { limit: 3 })).toEqual([
+      "2024-06-01",
+      "2024-06-02",
+      "2024-06-03",
+    ])
+  })
+
+  test("returns at most 1000 dates by default", () => {
+    const dates = getDateRange("2020-01-01", "2025-01-01")
+    expect(dates.length).toBeLessThanOrEqual(1000)
+    expect(dates[0]).toBe("2020-01-01")
+  })
+
+  test("can return more than 1000 dates if limit is raised", () => {
+    const dates = getDateRange("2020-01-01", "2025-01-01", { limit: 2000 })
+    expect(dates.length).toBeGreaterThan(1000)
+    expect(dates[0]).toBe("2020-01-01")
+    expect(dates[dates.length - 1]).toBe("2025-01-01")
+  })
+
+  // ISSUE: getDateRange does not validate that start/end are valid dates, so invalid input may yield unexpected results.
+  test("handles invalid date input (returns empty array if start > end lexically)", () => {
+    expect(getDateRange("not-a-date", "2024-01-01")).toEqual([])
   })
 })

@@ -79,7 +79,7 @@ export function isUnixTimestamp(ts, { max = 9999999999 } = {}) {
  * @param {number} $1.minutes Minutes to add to time string
  * @returns {string} HH:mm:ss
  */
-export function addTime(timeString, { minutes = 0, hours = 0 }) {
+export function addTime(timeString, { minutes = 0, hours = 0 } = {}) {
   let [hour, minute, second = 0] = timeString.split(":").map(Number)
   hour = mod(hour + hours, 24)
   minute += minutes
@@ -108,4 +108,22 @@ export function addDays(dateString, days = 0) {
   const date = new Date(Date.UTC(year, month - 1, day))
   date.setUTCDate(date.getUTCDate() + days)
   return date.toISOString().slice(0, 10)
+}
+
+/**
+ * Get all dates between two dates, with limit.
+ * @param {string} start
+ * @param {string} end
+ * @returns {Array}
+ */
+export function getDateRange(start, end, { limit = 1000 } = {}) {
+  const dates = []
+  while (start <= end) {
+    dates.push(start)
+    start = addDays(start, 1)
+    if (dates.length >= limit) {
+      break
+    }
+  }
+  return dates
 }
