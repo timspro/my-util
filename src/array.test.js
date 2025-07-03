@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-syntax */
 import { describe, expect, it, jest } from "@jest/globals"
 
-const { chunk, unique, mutateValues, ascending, descending, via } = await import("./array.js")
+const { chunk, unique, mutateValues, ascending, descending, multilevel, via } = await import("./array.js")
 
 describe("chunk", () => {
   it("splits array into chunks of specified size", () => {
@@ -185,6 +185,64 @@ describe("descending", () => {
     const arr = [{ v: 2 }, {}, { v: 3 }]
     arr.sort(descending("v"))
     expect(arr.map((o) => o.v)).toEqual([3, 2, undefined])
+  })
+})
+
+describe("multilevel", () => {
+  it("returns 0 if all comparators return 0", () => {
+    const cmp = multilevel(
+      () => 0,
+      () => 0
+    )
+    expect(cmp(1, 2)).toBe(0)
+    expect(cmp("a", "b")).toBe(0)
+  })
+
+  it("returns first non-zero comparator result", () => {
+    const cmp = multilevel(
+      () => 0,
+      () => -1,
+      () => 1
+    )
+    expect(cmp(1, 2)).toBe(-1)
+    const cmp2 = multilevel(
+      () => 0,
+      () => 0,
+      () => 1
+    )
+    expect(cmp2(1, 2)).toBe(1)
+  })
+
+  it("works with ascending and descending comparators", () => {
+    const arr = [
+      { a: 1, b: 2 },
+      { a: 2, b: 1 },
+      { a: 1, b: 1 },
+      { a: 2, b: 2 },
+    ]
+    arr.sort(multilevel(ascending("a"), descending("b")))
+    expect(arr).toEqual([
+      { a: 1, b: 2 },
+      { a: 1, b: 1 },
+      { a: 2, b: 2 },
+      { a: 2, b: 1 },
+    ])
+  })
+
+  it("short-circuits after first non-zero comparator", () => {
+    const calls = []
+    const cmp1 = jest.fn(() => { calls.push("cmp1"); return 0 })
+    const cmp2 = jest.fn(() => { calls.push("cmp2"); return -1 })
+    const cmp3 = jest.fn(() => { calls.push("cmp3"); return 1 })
+    const cmp = multilevel(cmp1, cmp2, cmp3)
+    expect(cmp({}, {})).toBe(-1)
+    expect(calls).toEqual(["cmp1", "cmp2"])
+  })
+
+  it("returns 0 if no comparators are provided", () => {
+    const cmp = multilevel()
+    expect(cmp(1, 2)).toBe(0)
+    expect(cmp("a", "b")).toBe(0)
   })
 })
 

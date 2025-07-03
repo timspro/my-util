@@ -93,6 +93,23 @@ export function descending(key) {
 }
 
 /**
+ * Combines multiple ascending and descending comparators.
+ * @param  {...Function} comparators
+ * @returns {Function}
+ */
+export function multilevel(...comparators) {
+  return (a, b) => {
+    for (const comparator of comparators) {
+      const result = comparator(a, b)
+      if (result) {
+        return result
+      }
+    }
+    return 0
+  }
+}
+
+/**
  * Creates a function that accesses an object's value at key.
  * @param {string} key
  * @returns {any}
