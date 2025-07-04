@@ -4,20 +4,22 @@ import {
   addTime,
   getDateRange,
   getEasternTime,
+  getTime,
   isDate,
   isTime,
   isUnixTimestamp,
 } from "./time.js"
 
-// getEasternTime changed: removed "days" param, added "timestamp" param
+// getEasternTime changed: now accepts a "timezone" param and no longer returns "minute" or "datetime"
 describe("getEasternTime", () => {
   test("returns correct structure and types", () => {
     const result = getEasternTime()
     expect(typeof result.timestamp).toBe("number")
     expect(typeof result.date).toBe("string")
     expect(typeof result.time).toBe("string")
-    expect(typeof result.minute).toBe("number")
-    expect(typeof result.datetime).toBe("string")
+    // minute and datetime are no longer returned
+    expect(result).not.toHaveProperty("minute")
+    expect(result).not.toHaveProperty("datetime")
   })
 
   test("floors to minute if floorMinute is true", () => {
@@ -46,7 +48,46 @@ describe("getEasternTime", () => {
     expect(def.date).toEqual(explicit.date)
     expect(def.time).toEqual(explicit.time)
     expect(def.timestamp).toEqual(explicit.timestamp)
-    expect(def.datetime).toEqual(explicit.datetime)
+  })
+
+  // New: test timezone override
+  test("respects timezone parameter", () => {
+    // 2024-06-01T12:34:56Z (UTC)
+    const ts = 1717245296
+    // New York (EDT, UTC-4)
+    const eastern = getEasternTime({ timestamp: ts, timezone: "America/New_York" })
+    // Los Angeles (PDT, UTC-7)
+    const pacific = getEasternTime({ timestamp: ts, timezone: "America/Los_Angeles" })
+    // UTC
+    const utc = getEasternTime({ timestamp: ts, timezone: "UTC" })
+    expect(eastern.time).not.toBe(pacific.time)
+    expect(eastern.time).not.toBe(utc.time)
+    expect(pacific.time).not.toBe(utc.time)
+    // Should match expected hour offset
+    expect(eastern.time.startsWith("08:34")).toBe(true) // EDT
+    expect(pacific.time.startsWith("05:34")).toBe(true) // PDT
+    expect(utc.time.startsWith("12:34")).toBe(true) // UTC
+  })
+
+  test("returns local time if timezone is empty string", () => {
+    // If timezone is falsy (""), should use local time zone
+    // We'll compare to Date.toLocaleString with no timeZone option
+    const ts = 1717245296
+    const local = getEasternTime({ timestamp: ts, timezone: "" })
+    const expected = new Date(ts * 1000).toLocaleString("en-US", {
+      hour12: false,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    })
+    const [, time] = expected.split(", ")
+    const [month, day, year] = expected.split(", ")[0].split("/")
+    const date = [year, month, day].join("-")
+    expect(local.date).toBe(date)
+    expect(local.time).toBe(time)
   })
 
   // DST boundary tests
@@ -86,6 +127,53 @@ describe("getEasternTime", () => {
     r = getEasternTime({ timestamp: ts })
     expect(r.date).toBe("2024-11-03")
     expect(r.time).toBe("02:00:00")
+  })
+})
+
+// New tests for getTime (newly exported function)
+describe("getTime", () => {
+  test("returns same structure as getEasternTime", () => {
+    const result = getTime({})
+    expect(typeof result.timestamp).toBe("number")
+    expect(typeof result.date).toBe("string")
+    expect(typeof result.time).toBe("string")
+    expect(result).not.toHaveProperty("minute")
+    expect(result).not.toHaveProperty("datetime")
+  })
+
+  test("defaults to local time if timezone is not provided", () => {
+    // getTime({}) should use timezone = false, which disables the timeZone option and uses local
+    const ts = 1717245296
+    const local = getTime({ timestamp: ts })
+    const expected = new Date(ts * 1000).toLocaleString("en-US", {
+      hour12: false,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    })
+    const [, time] = expected.split(", ")
+    const [month, day, year] = expected.split(", ")[0].split("/")
+    const date = [year, month, day].join("-")
+    expect(local.date).toBe(date)
+    expect(local.time).toBe(time)
+  })
+
+  test("passes timezone through to getEasternTime", () => {
+    // Should match getEasternTime with same timezone
+    const ts = 1717245296
+    const pacific = getTime({ timestamp: ts, timezone: "America/Los_Angeles" })
+    const ref = getEasternTime({ timestamp: ts, timezone: "America/Los_Angeles" })
+    expect(pacific).toEqual(ref)
+  })
+
+  test("floors to minute if floorMinute is true", () => {
+    const ts = 1717245296
+    const floored = getTime({ timestamp: ts, floorMinute: true })
+    expect(floored.timestamp % 60).toBe(0)
+    expect(floored.time.endsWith(":00")).toBe(true)
   })
 })
 
@@ -279,7 +367,6 @@ describe("addDays", () => {
   })
 })
 
-// New tests for getDateRange (newly exported function)
 describe("getDateRange", () => {
   test("returns all dates between start and end inclusive", () => {
     expect(getDateRange("2024-06-01", "2024-06-03")).toEqual([
