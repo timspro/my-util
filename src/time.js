@@ -41,7 +41,7 @@ export function getEasternTime({
  * @param {string=} $1.timezone Timezone to use instead of local time.
  * @returns {Object} { timestamp, date, time, minute, datetime }
  */
-export function getTime({ floorMinute, timestamp, timezone = false }) {
+export function getTime({ floorMinute, timestamp, timezone = false } = {}) {
   return getEasternTime({ floorMinute, timestamp, timezone })
 }
 
