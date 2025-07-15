@@ -1,11 +1,15 @@
 {
   "name": "@tim-code/my-util",
-  "version": "0.0.12",
+  "version": "0.0.16",
   "description": "",
   "type": "module",
   "author": "",
   "license": "MIT",
-  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./fs": "./src/fs.js",
+    "./run": "./src/run.js"
+  },
   "scripts": {
     "test": "node --no-warnings --experimental-vm-modules node_modules/.bin/jest"
   },
