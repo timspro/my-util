@@ -1,10 +1,11 @@
 {
   "name": "@tim-code/my-util",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "description": "",
   "type": "module",
   "author": "",
   "license": "MIT",
+  "main": "src/index.js",
   "exports": {
     ".": "./src/index.js",
     "./fs": "./src/fs.js",
