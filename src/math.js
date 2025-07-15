@@ -10,17 +10,23 @@ export function mod(number, modulus) {
 }
 
 /**
- * Convert a number to a string and prepend a plus if the number is positive.
- * @param {number} number
+ * Prepend a plus to a number or string if positive.
+ * @param {number|string} number Or string
  * @param {Object} $1
  * @param {boolean=} $1.zero If true, prepends a plus to zero as well.
- * @param {number=} $1.decimals If a number, uses .toFixed(decimals) instead of .toString()
- * @returns {string}
+ * @returns {string|undefined} Returns undefined if number is not a number or string. NaN return undefined.
  */
-export function formatPlus(number, { zero = false, decimals = undefined } = {}) {
-  const string = typeof decimals === "number" ? number.toFixed(decimals) : number.toString()
-  if (number > 0 || (number === 0 && zero)) {
-    return `+${string}`
+export function formatPlus(number, { zero = false } = {}) {
+  if (typeof number === "number" && !isNaN(number)) {
+    if (number > 0 || (zero && number === 0)) {
+      return `+${number}`
+    }
+    return `${number}`
+  } else if (typeof number === "string") {
+    if (number === "0" ? zero : number[0] !== "-") {
+      return `+${number}`
+    }
+    return number
   }
-  return `${string}`
+  return undefined
 }

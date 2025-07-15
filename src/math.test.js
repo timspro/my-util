@@ -77,25 +77,39 @@ describe("formatPlus", () => {
     expect(formatPlus(0, { zero: true })).toBe("+0")
   })
 
-  it("uses toFixed when decimals option is provided", () => {
-    expect(formatPlus(1.234, { decimals: 2 })).toBe("+1.23")
-    expect(formatPlus(-1.234, { decimals: 1 })).toBe("-1.2")
-    expect(formatPlus(0, { decimals: 3, zero: true })).toBe("+0.000")
-    expect(formatPlus(0, { decimals: 3 })).toBe("0.000")
-  })
-
-  it("handles zero with decimals and zero=true", () => {
-    expect(formatPlus(0, { decimals: 2, zero: true })).toBe("+0.00")
-  })
-
   it("handles undefined options argument", () => {
     expect(formatPlus(5)).toBe("+5")
     expect(formatPlus(-5)).toBe("-5")
     expect(formatPlus(0)).toBe("0")
   })
 
-  it("does not use toFixed if decimals is 0 (current behavior)", () => {
-    expect(formatPlus(1.99, { decimals: 0 })).toBe("+2")
-    expect(formatPlus(-1.99, { decimals: 0 })).toBe("-2")
+  // String input cases
+  it("prepends a plus for positive string numbers", () => {
+    expect(formatPlus("5")).toBe("+5")
+    expect(formatPlus("123.45")).toBe("+123.45")
+  })
+
+  it("does not prepend a plus for negative string numbers", () => {
+    expect(formatPlus("-5")).toBe("-5")
+    expect(formatPlus("-123.45")).toBe("-123.45")
+  })
+
+  it("prepends a plus for string zero if zero option is true", () => {
+    expect(formatPlus("0", { zero: true })).toBe("+0")
+  })
+
+  it("does not prepend a plus for string zero if zero option is false", () => {
+    expect(formatPlus("0")).toBe("0")
+  })
+
+  it("returns undefined for non-number, non-string input", () => {
+    expect(formatPlus(undefined)).toBeUndefined()
+    // eslint-disable-next-line no-restricted-syntax
+    expect(formatPlus(null)).toBeUndefined()
+    expect(formatPlus({})).toBeUndefined()
+    expect(formatPlus([])).toBeUndefined()
+    expect(formatPlus(true)).toBeUndefined()
+    expect(formatPlus(Symbol("x"))).toBeUndefined()
+    expect(formatPlus(NaN)).toBeUndefined()
   })
 })
