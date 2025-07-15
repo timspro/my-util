@@ -6,7 +6,7 @@ import { mod } from "./math.js"
  * @param {boolean=} $1.floorMinute If true, floors to the nearest minute. If false, floors to the nearest second.
  * @param {number=} $1.timestamp Unix timestamp to use instead of current time.
  * @param {string=} $1.timezone Timezone to use instead of Eastern time.
- * @returns {Object} { timestamp, date, time, datetime }
+ * @returns {Object} { timestamp, date: YYYY-MM-DD, time: HH:mm:ss }
  */
 export function getEasternTime({
   floorMinute = false,
@@ -17,7 +17,8 @@ export function getEasternTime({
     timestamp = new Date().getTime() / 1000
   }
   timestamp = floorMinute ? Math.floor(timestamp / 60) * 60 : Math.floor(timestamp)
-  const string = new Date(timestamp * 1000).toLocaleString("en-US", {
+  // 'en-CA' (English - Canada) formats dates as YYYY-MM-DD and times in 24-hour format by default
+  const string = new Date(timestamp * 1000).toLocaleString("en-CA", {
     ...(timezone ? { timeZone: timezone } : {}),
     hour12: false,
     year: "numeric",
@@ -27,9 +28,7 @@ export function getEasternTime({
     minute: "2-digit",
     second: "2-digit",
   })
-  const [americanDate, time] = string.split(", ")
-  const [month, day, year] = americanDate.split("/")
-  const date = [year, month, day].join("-")
+  const [date, time] = string.split(", ")
   return { timestamp, date, time }
 }
 
@@ -38,11 +37,19 @@ export function getEasternTime({
  * @param {Object} $1
  * @param {boolean=} $1.floorMinute If true, floors to the nearest minute. If false, floors to the nearest second.
  * @param {number=} $1.timestamp Unix timestamp to use instead of current time.
- * @param {string=} $1.timezone Timezone to use instead of local time.
+ * @param {string=} $1.timezone Timezone to use instead of local time. undefined corresponds to "America/New_York" and "" (falsy) corresponds to local time.
  * @returns {Object} { timestamp, date, time, minute, datetime }
  */
-export function getTime({ floorMinute, timestamp, timezone = false } = {}) {
+export function getTime({ floorMinute, timestamp, timezone = "" } = {}) {
   return getEasternTime({ floorMinute, timestamp, timezone })
+}
+
+/**
+ * Get today's date in YYYY-MM-DD format.
+ * @returns {string}
+ */
+export function today() {
+  return getTime().date
 }
 
 /**
