@@ -95,7 +95,7 @@ export function isUnixTimestamp(ts, { max = 9999999999 } = {}) {
 
 /**
  * Add an amount of time to a time string.
- * @param {string} timeString HH:mm:ss or HH:mm; parsable numbers separated by :
+ * @param {string} timeString HH:mm:ss or HH:mm
  * @param {Object} $1
  * @param {number} $1.hours Hours to add to time string
  * @param {number} $1.minutes Minutes to add to time string
@@ -119,9 +119,35 @@ export function addTime(timeString, { minutes = 0, hours = 0 } = {}) {
   return newTime
 }
 
+const MINUTES_IN_DAY = 24 * 60
+/**
+ * Get all minutes between two times. This does not work across day i.e 23:59:00 to 00:00:00.
+ * @param {string} start HH:mm:ss or HH:mm
+ * @param {string} end HH:mm:ss or HH:mm
+ * @returns {Array} times in HH:mm:ss
+ */
+export function getMinuteRange(start, end) {
+  // coerce start and end to seconds
+  start = addTime(start)
+  end = addTime(end)
+  if (!(start <= end)) {
+    throw new Error("start time is not less than end time")
+  }
+  const times = []
+  let current = start
+  while (current <= end) {
+    times.push(current)
+    current = addTime(current, { minutes: 1 })
+    if (times.length >= MINUTES_IN_DAY) {
+      break
+    }
+  }
+  return times
+}
+
 /**
  * Adds a number of days to a date string.
- * @param {string} dateString
+ * @param {string} dateString YYYY-MM-DD
  * @param {number} days
  * @returns {string}
  */
@@ -134,8 +160,8 @@ export function addDays(dateString, days = 0) {
 
 /**
  * Get all dates between two dates, with limit.
- * @param {string} start
- * @param {string} end
+ * @param {string} start YYYY-MM-DD
+ * @param {string} end YYYY-MM-DD
  * @returns {Array}
  */
 export function getDateRange(start, end, { limit = 1000 } = {}) {

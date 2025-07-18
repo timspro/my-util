@@ -4,10 +4,12 @@ import {
   addTime,
   getDateRange,
   getEasternTime,
+  getMinuteRange,
   getTime,
   isDate,
   isTime,
   isUnixTimestamp,
+  today,
 } from "./time.js"
 
 // getEasternTime changed: now accepts a "timezone" param and no longer returns "minute" or "datetime"
@@ -177,6 +179,14 @@ describe("getTime", () => {
   })
 })
 
+describe("today", () => {
+  test("returns today's date in YYYY-MM-DD format", () => {
+    const expected = getTime().date
+    expect(today()).toBe(expected)
+    expect(/^\d{4}-\d{2}-\d{2}$/u.test(today())).toBe(true)
+  })
+})
+
 describe("isDate", () => {
   test("returns true for valid YYYY-MM-DD dates", () => {
     expect(isDate("2024-06-01")).toBe(true)
@@ -313,6 +323,49 @@ describe("addTime", () => {
   test("handles missing options argument (all defaults)", () => {
     expect(addTime("12:34:56")).toBe("12:34:56")
     expect(addTime("05:10")).toBe("05:10:00")
+  })
+})
+
+describe("getMinuteRange", () => {
+  test("returns all minutes between start and end inclusive", () => {
+    expect(getMinuteRange("12:00:00", "12:03:00")).toEqual([
+      "12:00:00",
+      "12:01:00",
+      "12:02:00",
+      "12:03:00",
+    ])
+  })
+
+  test("works with times that cross the hour", () => {
+    expect(getMinuteRange("12:58:00", "13:01:00")).toEqual([
+      "12:58:00",
+      "12:59:00",
+      "13:00:00",
+      "13:01:00",
+    ])
+  })
+
+  test("works with times with nonzero seconds", () => {
+    expect(getMinuteRange("12:00:30", "12:02:30")).toEqual([
+      "12:00:30",
+      "12:01:30",
+      "12:02:30",
+    ])
+  })
+
+  test("returns single element if start equals end", () => {
+    expect(getMinuteRange("12:34:56", "12:34:56")).toEqual(["12:34:56"])
+  })
+
+  test("throws if start is not less than end", () => {
+    expect(() => getMinuteRange("12:04:00", "12:03:00")).toThrow(
+      /start time is not less than end time/u
+    )
+    expect(() => getMinuteRange("12:00:00", "12:00:00")).not.toThrow()
+  })
+
+  test("handles input with no seconds", () => {
+    expect(getMinuteRange("12:00", "12:02")).toEqual(["12:00:00", "12:01:00", "12:02:00"])
   })
 })
 
