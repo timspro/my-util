@@ -4,8 +4,8 @@ import {
   addTime,
   getDateRange,
   getEasternTime,
-  getMinuteRange,
   getTime,
+  getTimeRange,
   isDate,
   isTime,
   isUnixTimestamp,
@@ -326,9 +326,9 @@ describe("addTime", () => {
   })
 })
 
-describe("getMinuteRange", () => {
+describe("getTimeRange", () => {
   test("returns all minutes between start and end inclusive", () => {
-    expect(getMinuteRange("12:00:00", "12:03:00")).toEqual([
+    expect(getTimeRange("12:00:00", "12:03:00")).toEqual([
       "12:00:00",
       "12:01:00",
       "12:02:00",
@@ -337,7 +337,7 @@ describe("getMinuteRange", () => {
   })
 
   test("works with times that cross the hour", () => {
-    expect(getMinuteRange("12:58:00", "13:01:00")).toEqual([
+    expect(getTimeRange("12:58:00", "13:01:00")).toEqual([
       "12:58:00",
       "12:59:00",
       "13:00:00",
@@ -346,26 +346,20 @@ describe("getMinuteRange", () => {
   })
 
   test("works with times with nonzero seconds", () => {
-    expect(getMinuteRange("12:00:30", "12:02:30")).toEqual([
-      "12:00:30",
-      "12:01:30",
-      "12:02:30",
-    ])
+    expect(getTimeRange("12:00:30", "12:02:30")).toEqual(["12:00:30", "12:01:30", "12:02:30"])
   })
 
   test("returns single element if start equals end", () => {
-    expect(getMinuteRange("12:34:56", "12:34:56")).toEqual(["12:34:56"])
+    expect(getTimeRange("12:34:56", "12:34:56")).toEqual(["12:34:56"])
   })
 
-  test("throws if start is not less than end", () => {
-    expect(() => getMinuteRange("12:04:00", "12:03:00")).toThrow(
-      /start time is not less than end time/u
-    )
-    expect(() => getMinuteRange("12:00:00", "12:00:00")).not.toThrow()
+  test("handles if start is greater or equal to end", () => {
+    expect(getTimeRange("12:04:00", "12:03:00")).toEqual([])
+    expect(getTimeRange("12:00:00", "12:00:00")).toEqual(["12:00:00"])
   })
 
   test("handles input with no seconds", () => {
-    expect(getMinuteRange("12:00", "12:02")).toEqual(["12:00:00", "12:01:00", "12:02:00"])
+    expect(getTimeRange("12:00", "12:02")).toEqual(["12:00:00", "12:01:00", "12:02:00"])
   })
 })
 
