@@ -88,7 +88,9 @@ export async function allSettled({ array, limit, flatten = false }, callback) {
 export function alert(result) {
   const { errors } = result ?? {}
   if (errors && errors.length) {
-    throw new Error(JSON.stringify(errors, undefined, 2))
+    // coerce errors to strings since sometimes .stringify() won't do this for Error objects
+    const strings = errors.map((error) => error.toString())
+    throw new Error(JSON.stringify(strings, undefined, 2))
   }
   return result
 }

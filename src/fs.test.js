@@ -8,8 +8,6 @@ const writeFileMock = jest.fn()
 jest.unstable_mockModule("node:fs/promises", () => ({
   readFile: readFileMock,
   stat: statMock,
-}))
-jest.unstable_mockModule("node:fs", () => ({
   writeFile: writeFileMock,
 }))
 jest.unstable_mockModule("node:os", () => ({
