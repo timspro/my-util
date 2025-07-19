@@ -4,9 +4,13 @@ const readFileMock = jest.fn()
 const statMock = jest.fn()
 const tmpdirMock = jest.fn()
 const gunzipMock = jest.fn()
+const writeFileMock = jest.fn()
 jest.unstable_mockModule("node:fs/promises", () => ({
   readFile: readFileMock,
   stat: statMock,
+}))
+jest.unstable_mockModule("node:fs", () => ({
+  writeFile: writeFileMock,
 }))
 jest.unstable_mockModule("node:os", () => ({
   tmpdir: tmpdirMock,
@@ -20,7 +24,7 @@ jest.unstable_mockModule("node:util", () => ({
 
 // Now import the module under test
 const mod = await import("./fs.js")
-const { getJSON, getCompressedJSON, pathExists, makeTempDirectory } = mod
+const { getJSON, writeJSON, getCompressedJSON, pathExists, makeTempDirectory } = mod
 
 describe("getJSON", () => {
   beforeEach(() => jest.clearAllMocks())
@@ -29,6 +33,29 @@ describe("getJSON", () => {
     const result = await getJSON("foo.json")
     expect(result).toEqual({ a: 1 })
     expect(readFileMock).toHaveBeenCalledWith("foo.json")
+  })
+})
+
+describe("writeJSON", () => {
+  beforeEach(() => jest.clearAllMocks())
+  it("writes object as JSON with default indent", async () => {
+    await writeJSON("foo.json", { x: 2 })
+    const formatted = ["{", '  "x": 2', "}"].join("\n")
+    expect(writeFileMock).toHaveBeenCalledWith("foo.json", formatted)
+  })
+  it("writes array as JSON with default indent", async () => {
+    await writeJSON("foo.json", [1, 2])
+    const formatted = ["[", "  1,", "  2", "]"].join("\n")
+    expect(writeFileMock).toHaveBeenCalledWith("foo.json", formatted)
+  })
+  it("writes object as JSON with custom indent", async () => {
+    await writeJSON("foo.json", { x: 2 }, { indent: 4 })
+    const formatted = ["{", '    "x": 2', "}"].join("\n")
+    expect(writeFileMock).toHaveBeenCalledWith("foo.json", formatted)
+  })
+  it("writes object as JSON with no indent", async () => {
+    await writeJSON("foo.json", { x: 2 }, { indent: 0 })
+    expect(writeFileMock).toHaveBeenCalledWith("foo.json", '{"x":2}')
   })
 })
 

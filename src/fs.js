@@ -1,3 +1,4 @@
+import { writeFile } from "node:fs"
 import { readFile, stat } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { promisify } from "node:util"
@@ -16,6 +17,18 @@ const gunzip = promisify(_gunzip)
 export async function getJSON(path) {
   const buffer = await readFile(path)
   return JSON.parse(buffer.toString())
+}
+
+/**
+ * Write JSON to a path.
+ * @param {string} path
+ * @param {Object|Array} object
+ * @param {Object} $1
+ * @param {number=} $1.indent Indent used to format JSON object. Default 2. If 0, does not indent object.
+ */
+export async function writeJSON(path, object, { indent = 2 } = {}) {
+  const string = JSON.stringify(object, undefined, indent)
+  await writeFile(path, string)
 }
 
 /**
