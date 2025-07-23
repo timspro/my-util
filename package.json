@@ -1,10 +1,11 @@
 {
   "name": "@tim-code/my-util",
-  "version": "0.0.23",
+  "version": "0.0.24",
   "description": "",
   "type": "module",
   "author": "",
   "license": "MIT",
+  "sideEffects": false,
   "main": "src/index.js",
   "exports": {
     ".": "./src/index.js",
@@ -23,7 +24,6 @@
   "devDependencies": {
     "@tim-code/eslint-config": "^1.1.7",
     "@jest/globals": "^29.7.0",
-    "@types/node": ">=20 <21",
     "jest": "^29.7.0"
   },
   "jest": {
