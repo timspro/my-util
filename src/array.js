@@ -41,6 +41,15 @@ export function mutateValues(object, callback) {
   return object
 }
 
+/**
+ * Creates a function that accesses an object's value at key.
+ * @param {string} key
+ * @returns {any}
+ */
+export function via(key) {
+  return (object) => object[key]
+}
+
 // sorts undefined and null to the end if applicable
 function compareUndefinedNull(a, b) {
   if (b === undefined || b === null) {
@@ -109,30 +118,139 @@ export function multilevel(...comparators) {
   }
 }
 
-/**
- * Creates a function that accesses an object's value at key.
- * @param {string} key
- * @returns {any}
- */
-export function via(key) {
-  return (object) => object[key]
+function findClosestAbs(array, value, { key, threshold = Infinity } = {}) {
+  let closest
+  if (key) {
+    for (const element of array) {
+      const _value = element[key]
+      const diff = Math.abs(_value - value)
+      if (diff < threshold) {
+        closest = element
+        threshold = diff
+      }
+    }
+  } else {
+    for (const _value of array) {
+      const diff = Math.abs(_value - value)
+      if (diff < threshold) {
+        closest = _value
+        threshold = diff
+      }
+    }
+  }
+  return closest
 }
 
-// export function contains(template) {
-//   return (object) => {
-//     for (const key in template) {
-//       if (object[key] !== template[key]) {
-//         return false
-//       }
-//     }
-//     return true
-//   }
-// }
+function findClosestLT(array, value, { key, threshold = -Infinity } = {}) {
+  let closest
+  if (key) {
+    for (const element of array) {
+      const _value = element[key]
+      if (_value < value && _value > threshold) {
+        closest = element
+        threshold = _value
+      }
+    }
+  } else {
+    for (const _value of array) {
+      if (_value < value && _value > threshold) {
+        closest = _value
+        threshold = _value
+      }
+    }
+  }
+  return closest
+}
 
-// not sure how far we want to go down "key" rabbit hole:
-// export function sum(array, key) {}
-// or maybe
-// export function add(key) {
-//  if(!key) return (acc, value) => acc + value
-//  return (acc, obj) => acc + obj[key]
-// }
+function findClosestLTE(array, value, { key, threshold = -Infinity } = {}) {
+  let closest
+  if (key) {
+    for (const element of array) {
+      const _value = element[key]
+      if (_value <= value && _value > threshold) {
+        closest = element
+        threshold = _value
+      }
+    }
+  } else {
+    for (const _value of array) {
+      if (_value <= value && _value > threshold) {
+        closest = _value
+        threshold = _value
+      }
+    }
+  }
+  return closest
+}
+
+function findClosestGT(array, value, { key, threshold = Infinity } = {}) {
+  let closest
+  if (key) {
+    for (const element of array) {
+      const _value = element[key]
+      if (_value > value && _value < threshold) {
+        closest = element
+        threshold = _value
+      }
+    }
+  } else {
+    for (const _value of array) {
+      if (_value > value && _value < threshold) {
+        closest = _value
+        threshold = _value
+      }
+    }
+  }
+  return closest
+}
+
+function findClosestGTE(array, value, { key, threshold = Infinity } = {}) {
+  let closest
+  if (key) {
+    for (const element of array) {
+      const _value = element[key]
+      if (_value >= value && _value < threshold) {
+        closest = element
+        threshold = _value
+      }
+    }
+  } else {
+    for (const _value of array) {
+      if (_value >= value && _value < threshold) {
+        closest = _value
+        threshold = _value
+      }
+    }
+  }
+  return closest
+}
+
+/**
+ * Find the closest element in an array.
+ * If using for strings, need to specify different values for "threshold" and "comparator".
+ * "~" and "" are good threshold string values for gt/gte and lt/lte respectively.
+ * @param {Array<T>} array
+ * @param {T} value
+ * @param {Object} options
+ * @param {string=} options.key If specified, will consider the value for each element's key instead of the element itself.
+ * @param {string=} options.comparator "abs", "lt", "lte", "gt", "gte", "abs". Default is "abs" which implies T is number.
+ * @param {T=} options.threshold If specified, uses a different initial min/max/difference than positive or negative infinity.
+ * @returns {T|undefined}
+ */
+export function findClosest(array, value, options = {}) {
+  const { comparator = "abs" } = options
+  switch (comparator) {
+    case "lt":
+      return findClosestLT(array, value, options)
+    case "lte":
+      return findClosestLTE(array, value, options)
+    case "gt":
+      return findClosestGT(array, value, options)
+    case "gte":
+      return findClosestGTE(array, value, options)
+    case "abs":
+      return findClosestAbs(array, value, options)
+    default:
+      throw new Error(`Unknown comparator: ${comparator}`)
+  }
+}

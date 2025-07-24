@@ -1,7 +1,10 @@
 /* eslint-disable no-restricted-syntax */
 import { describe, expect, it, jest } from "@jest/globals"
+import { findClosest } from "./array.js"
 
-const { chunk, unique, mutateValues, ascending, descending, multilevel, via } = await import("./array.js")
+const { chunk, unique, mutateValues, ascending, descending, multilevel, via } = await import(
+  "./array.js"
+)
 
 describe("chunk", () => {
   it("splits array into chunks of specified size", () => {
@@ -231,9 +234,18 @@ describe("multilevel", () => {
 
   it("short-circuits after first non-zero comparator", () => {
     const calls = []
-    const cmp1 = jest.fn(() => { calls.push("cmp1"); return 0 })
-    const cmp2 = jest.fn(() => { calls.push("cmp2"); return -1 })
-    const cmp3 = jest.fn(() => { calls.push("cmp3"); return 1 })
+    const cmp1 = jest.fn(() => {
+      calls.push("cmp1")
+      return 0
+    })
+    const cmp2 = jest.fn(() => {
+      calls.push("cmp2")
+      return -1
+    })
+    const cmp3 = jest.fn(() => {
+      calls.push("cmp3")
+      return 1
+    })
     const cmp = multilevel(cmp1, cmp2, cmp3)
     expect(cmp({}, {})).toBe(-1)
     expect(calls).toEqual(["cmp1", "cmp2"])
@@ -269,5 +281,155 @@ describe("via", () => {
     const getFoo = via("foo")
     expect(() => getFoo(undefined)).toThrow(TypeError)
     expect(() => getFoo(null)).toThrow(TypeError)
+  })
+})
+
+describe("findClosest", () => {
+  it("returns the closest value by absolute difference (default comparator)", () => {
+    expect(findClosest([1, 5, 10], 6)).toBe(5)
+    expect(findClosest([1, 5, 10], 8)).toBe(10)
+    expect(findClosest([1, 5, 10], 1)).toBe(1)
+  })
+
+  it("returns undefined if array is empty", () => {
+    expect(findClosest([], 10)).toBeUndefined()
+  })
+
+  it("returns the closest object by key (abs)", () => {
+    const arr = [{ v: 1 }, { v: 5 }, { v: 10 }]
+    expect(findClosest(arr, 6, { key: "v" })).toEqual({ v: 5 })
+  })
+
+  it("returns the closest value less than input (lt comparator)", () => {
+    expect(findClosest([1, 3, 5, 7], 6, { comparator: "lt" })).toBe(5)
+    expect(findClosest([1, 3, 5, 7], 1, { comparator: "lt" })).toBeUndefined()
+  })
+
+  it("returns the closest value less than or equal to input (lte comparator)", () => {
+    expect(findClosest([1, 3, 5, 7], 5, { comparator: "lte" })).toBe(5)
+    expect(findClosest([1, 3, 5, 7], 2, { comparator: "lte" })).toBe(1)
+    expect(findClosest([1, 3, 5, 7], 0, { comparator: "lte" })).toBeUndefined()
+  })
+
+  it("returns the closest value greater than input (gt comparator)", () => {
+    expect(findClosest([1, 3, 5, 7], 5, { comparator: "gt" })).toBe(7)
+    expect(findClosest([1, 3, 5, 7], 7, { comparator: "gt" })).toBeUndefined()
+  })
+
+  it("returns the closest value greater than or equal to input (gte comparator)", () => {
+    expect(findClosest([1, 3, 5, 7], 5, { comparator: "gte" })).toBe(5)
+    expect(findClosest([1, 3, 5, 7], 6, { comparator: "gte" })).toBe(7)
+    expect(findClosest([1, 3, 5, 7], 8, { comparator: "gte" })).toBeUndefined()
+  })
+
+  it("returns the closest object by key for lt/lte/gt/gte", () => {
+    const arr = [{ v: 1 }, { v: 5 }, { v: 10 }]
+    expect(findClosest(arr, 6, { comparator: "lt", key: "v" })).toEqual({ v: 5 })
+    expect(findClosest(arr, 6, { comparator: "lte", key: "v" })).toEqual({ v: 5 })
+    expect(findClosest(arr, 6, { comparator: "gt", key: "v" })).toEqual({ v: 10 })
+    expect(findClosest(arr, 10, { comparator: "gte", key: "v" })).toEqual({ v: 10 })
+  })
+
+  it("respects the threshold option for abs comparator", () => {
+    expect(findClosest([1, 5, 10], 6, { threshold: 0.5 })).toBeUndefined()
+    expect(findClosest([1, 5, 10], 6, { threshold: 2 })).toBe(5)
+  })
+
+  it("respects the threshold option for lt/lte/gt/gte", () => {
+    expect(findClosest([1, 3, 5, 7], 6, { comparator: "lt", threshold: 4 })).toBe(5)
+    expect(findClosest([1, 3, 5, 7], 6, { comparator: "lt", threshold: 5 })).toBeUndefined()
+    expect(findClosest([1, 3, 5, 7], 6, { comparator: "gt", threshold: 7 })).toBeUndefined()
+    expect(findClosest([1, 3, 5, 7], 6, { comparator: "gt", threshold: 10 })).toBe(7)
+  })
+
+  it("throws for unknown comparator", () => {
+    expect(() => findClosest([1, 2, 3], 2, { comparator: "foo" })).toThrow(
+      "Unknown comparator: foo"
+    )
+  })
+
+  it("returns undefined if no element matches threshold/key criteria", () => {
+    expect(
+      findClosest([{ v: 1 }], 10, { comparator: "gt", key: "v", threshold: 1 })
+    ).toBeUndefined()
+    expect(
+      findClosest([{ v: 1 }], 0, { comparator: "lt", key: "v", threshold: 1 })
+    ).toBeUndefined()
+  })
+
+  it("works with negative numbers and zero", () => {
+    expect(findClosest([-10, -5, 0, 5, 10], -7)).toBe(-5)
+    expect(findClosest([-10, -5, 0, 5, 10], 0)).toBe(0)
+    expect(findClosest([-10, -5, 0, 5, 10], 7)).toBe(5)
+  })
+
+  it("skips NaN values in abs comparator", () => {
+    expect(findClosest([1, NaN, 5], 4)).toBe(5)
+  })
+
+  it("skips objects missing the key in key-based comparators", () => {
+    const arr = [{ v: 1 }, {}, { v: 5 }]
+    expect(findClosest(arr, 2, { key: "v" })).toEqual({ v: 1 })
+  })
+
+  it("finds the closest string using abs comparator and a custom threshold/comparator", () => {
+    // Since abs comparator expects numbers, we need to provide a custom comparator for strings.
+    // We'll use threshold and comparator: "lt", "lte", "gt", "gte" for string comparisons.
+    const arr = ["apple", "banana", "cherry", "date"]
+    // Find the closest string less than "carrot" (alphabetically)
+    expect(findClosest(arr, "carrot", { comparator: "lt", threshold: "" })).toBe("banana")
+    // Find the closest string less than or equal to "banana"
+    expect(findClosest(arr, "banana", { comparator: "lte", threshold: "" })).toBe("banana")
+    // Find the closest string greater than "carrot"
+    expect(findClosest(arr, "carrot", { comparator: "gt", threshold: "~" })).toBe("cherry")
+    // Find the closest string greater than or equal to "date"
+    expect(findClosest(arr, "date", { comparator: "gte", threshold: "~" })).toBe("date")
+    // If nothing matches, returns undefined
+    expect(findClosest(arr, "aardvark", { comparator: "lt", threshold: "" })).toBeUndefined()
+    expect(findClosest(arr, "zebra", { comparator: "gt", threshold: "~" })).toBeUndefined()
+  })
+
+  it("finds the closest string by key in array of objects", () => {
+    const arr = [{ name: "apple" }, { name: "banana" }, { name: "cherry" }]
+    expect(
+      findClosest(arr, "blueberry", { comparator: "lt", key: "name", threshold: "" })
+    ).toEqual({
+      name: "banana",
+    })
+    expect(
+      findClosest(arr, "banana", { comparator: "lte", key: "name", threshold: "" })
+    ).toEqual({
+      name: "banana",
+    })
+    expect(
+      findClosest(arr, "banana", { comparator: "gt", key: "name", threshold: "~" })
+    ).toEqual({
+      name: "cherry",
+    })
+    expect(
+      findClosest(arr, "cherry", { comparator: "gte", key: "name", threshold: "~" })
+    ).toEqual({
+      name: "cherry",
+    })
+    expect(
+      findClosest(arr, "aardvark", { comparator: "lt", key: "name", threshold: "" })
+    ).toBeUndefined()
+  })
+
+  it("returns undefined if no string matches threshold/key criteria", () => {
+    const arr = ["apple", "banana", "cherry"]
+    expect(findClosest(arr, "apple", { comparator: "lt", threshold: "" })).toBeUndefined()
+    expect(findClosest(arr, "cherry", { comparator: "gt" })).toBeUndefined()
+  })
+
+  it("can use abs comparator with string lengths", () => {
+    // This is a reasonable use-case for abs: find string with length closest to 4
+    const arr = ["a", "bb", "ccc", "dddd", "eeeee"]
+    // Map to string lengths using key
+    expect(findClosest(arr, 4, { comparator: "abs", key: "length" })).toEqual("dddd")
+    // If threshold is set so no string length is close enough
+    expect(
+      findClosest(arr, 4, { comparator: "abs", key: "length", threshold: -1 })
+    ).toBeUndefined()
   })
 })
