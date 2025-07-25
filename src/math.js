@@ -10,6 +10,20 @@ export function mod(number, modulus) {
 }
 
 /**
+ * Given two points, returns a function
+ * This function, given an "x" value, returns a "y" value that is on the same line as the first two points.
+ * @param {[number, number]} firstPoint
+ * @param {[number, number]} secondPoint
+ * @returns {Function}
+ */
+export function line([x1, y1], [x2, y2]) {
+  const m = (y2 - y1) / (x2 - x1)
+  // m * x1 + b = y1
+  const b = y1 - m * x1
+  return (x) => m * x + b
+}
+
+/**
  * Prepend a plus to a number or string if positive.
  * @param {number|string} number Or string
  * @param {Object} $1

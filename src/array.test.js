@@ -2,9 +2,7 @@
 import { describe, expect, it, jest } from "@jest/globals"
 import { findClosest } from "./array.js"
 
-const { chunk, unique, mutateValues, ascending, descending, multilevel, via } = await import(
-  "./array.js"
-)
+const { chunk, unique, ascending, descending, multilevel } = await import("./array.js")
 
 describe("chunk", () => {
   it("splits array into chunks of specified size", () => {
@@ -70,42 +68,6 @@ describe("unique", () => {
     const a = {}
     const b = {}
     expect(unique([a, b, a])).toEqual([a, b])
-  })
-})
-
-describe("mutateValues", () => {
-  it("mutates values in the object using the callback", () => {
-    const obj = { a: 1, b: 2 }
-    const result = mutateValues(obj, (v) => v * 2)
-    expect(result).toEqual({ a: 2, b: 4 })
-    expect(obj).toBe(result) // should mutate in place
-  })
-
-  it("callback receives value, key, and object", () => {
-    const obj = { x: 1 }
-    const cb = jest.fn((v) => v + 1)
-    mutateValues(obj, cb)
-    expect(cb).toHaveBeenCalledWith(1, "x", obj)
-  })
-
-  it("returns the same object reference", () => {
-    const obj = { foo: "bar" }
-    const returned = mutateValues(obj, (v) => v)
-    expect(returned).toBe(obj)
-  })
-
-  it("handles empty object", () => {
-    const obj = {}
-    expect(mutateValues(obj, (v) => v)).toEqual({})
-  })
-
-  it("mutates inherited enumerable properties", () => {
-    const proto = { inherited: 1 }
-    const obj = Object.create(proto)
-    obj.own = 2
-    const result = mutateValues(obj, (v) => v + 1)
-    expect(result.own).toBe(3)
-    expect(result.inherited).toBe(2)
   })
 })
 
@@ -255,32 +217,6 @@ describe("multilevel", () => {
     const cmp = multilevel()
     expect(cmp(1, 2)).toBe(0)
     expect(cmp("a", "b")).toBe(0)
-  })
-})
-
-describe("via", () => {
-  it("returns a function that accesses the given key", () => {
-    const getFoo = via("foo")
-    expect(getFoo({ foo: 42 })).toBe(42)
-    expect(getFoo({ foo: "bar" })).toBe("bar")
-  })
-
-  it("returns undefined if the key does not exist", () => {
-    const getX = via("x")
-    expect(getX({})).toBeUndefined()
-    expect(getX({ y: 1 })).toBeUndefined()
-  })
-
-  it("works with numeric keys", () => {
-    const get0 = via(0)
-    expect(get0([10, 20])).toBe(10)
-    expect(get0({ 0: "zero" })).toBe("zero")
-  })
-
-  it("returns undefined if object is missing", () => {
-    const getFoo = via("foo")
-    expect(() => getFoo(undefined)).toThrow(TypeError)
-    expect(() => getFoo(null)).toThrow(TypeError)
   })
 })
 

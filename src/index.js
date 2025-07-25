@@ -1,4 +1,5 @@
 export * from "./array.js"
 export * from "./math.js"
+export * from "./object.js"
 export * from "./promise.js"
 export * from "./time.js"

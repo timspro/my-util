@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals"
-const { mod, formatPlus } = await import("./math.js")
+const { mod, formatPlus, line } = await import("./math.js")
 
 describe("mod", () => {
   it("returns n when n is less than m and n is non-negative", () => {
@@ -55,6 +55,52 @@ describe("mod", () => {
     expect(mod(-5, 0)).toBeNaN()
     // number = 0, modulus = 0
     expect(mod(0, 0)).toBeNaN()
+  })
+})
+
+describe("line", () => {
+  it("returns a function that produces y for given x on the line through two points", () => {
+    const f = line([0, 0], [1, 1])
+    expect(f(0)).toBe(0)
+    expect(f(1)).toBe(1)
+    expect(f(2)).toBe(2)
+    expect(f(-1)).toBe(-1)
+  })
+
+  it("handles non-origin, non-unit slope", () => {
+    const f = line([1, 2], [3, 6]) // slope 2, intercept 0
+    expect(f(1)).toBe(2)
+    expect(f(2)).toBe(4)
+    expect(f(3)).toBe(6)
+    expect(f(0)).toBe(0)
+  })
+
+  it("handles negative slope", () => {
+    const f = line([0, 0], [2, -2]) // slope -1
+    expect(f(1)).toBe(-1)
+    expect(f(2)).toBe(-2)
+    expect(f(-2)).toBe(2)
+  })
+
+  it("handles horizontal line", () => {
+    const f = line([1, 5], [3, 5]) // slope 0
+    expect(f(0)).toBe(5)
+    expect(f(100)).toBe(5)
+    expect(f(-100)).toBe(5)
+  })
+
+  it("handles vertical line by returning NaN", () => {
+    const f = line([2, 1], [2, 5])
+    expect(f(2)).toBeNaN()
+    expect(f(3)).toBeNaN()
+    expect(f(1)).toBeNaN()
+  })
+
+  it("works with negative coordinates", () => {
+    const f = line([-1, -2], [1, 2]) // slope 2
+    expect(f(-1)).toBe(-2)
+    expect(f(0)).toBe(0)
+    expect(f(1)).toBe(2)
   })
 })
 

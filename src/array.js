@@ -28,28 +28,6 @@ export function unique(array) {
   return [...new Set(array)]
 }
 
-/**
- * Mutates the passed in object by calling callback on each of its values.
- * @param {Object} object
- * @param {Function} callback (value, key, object) => newValue // note if not changing value, should return value
- * @returns {Object}
- */
-export function mutateValues(object, callback) {
-  for (const key in object) {
-    object[key] = callback(object[key], key, object)
-  }
-  return object
-}
-
-/**
- * Creates a function that accesses an object's value at key.
- * @param {string} key
- * @returns {any}
- */
-export function via(key) {
-  return (object) => object[key]
-}
-
 // sorts undefined and null to the end if applicable
 function compareUndefinedNull(a, b) {
   if (b === undefined || b === null) {
