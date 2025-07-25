@@ -44,7 +44,7 @@ export function via(key) {
  * @param {Object} template
  * @returns {Function}
  */
-export function contains(template) {
+export function like(template) {
   const keys = Object.keys(template)
   return (object) => {
     for (const key of keys) {

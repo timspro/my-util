@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-syntax */
 import { jest } from "@jest/globals"
-import { contains, deleteUndefinedValues, mutateValues, via } from "./object.js"
+import { deleteUndefinedValues, like, mutateValues, via } from "./object.js"
 
 describe("mutateValues", () => {
   it("mutates values in the object using the callback", () => {
@@ -106,14 +106,14 @@ describe("via", () => {
 describe("contains", () => {
   it("returns true when object contains all template keys with same values", () => {
     const template = { a: 1, b: 2 }
-    const fn = contains(template)
+    const fn = like(template)
     expect(fn({ a: 1, b: 2, c: 3 })).toBe(true)
     expect(fn({ a: 1, b: 2 })).toBe(true)
   })
 
   it("returns false if any template key is missing", () => {
     const template = { a: 1, b: 2 }
-    const fn = contains(template)
+    const fn = like(template)
     expect(fn({ a: 1 })).toBe(false)
     expect(fn({ b: 2 })).toBe(false)
     expect(fn({})).toBe(false)
@@ -121,14 +121,14 @@ describe("contains", () => {
 
   it("returns false if any template key has a different value", () => {
     const template = { a: 1, b: 2 }
-    const fn = contains(template)
+    const fn = like(template)
     expect(fn({ a: 1, b: 3 })).toBe(false)
     expect(fn({ a: 2, b: 2 })).toBe(false)
     expect(fn({ a: 2, b: 3 })).toBe(false)
   })
 
   it("works with empty template (always true)", () => {
-    const fn = contains({})
+    const fn = like({})
     expect(fn({})).toBe(true)
     expect(fn({ a: 1 })).toBe(true)
     expect(fn({ a: undefined })).toBe(true)
@@ -136,13 +136,13 @@ describe("contains", () => {
 
   it("does not require object to have only template keys", () => {
     const template = { x: 5 }
-    const fn = contains(template)
+    const fn = like(template)
     expect(fn({ x: 5, y: 10 })).toBe(true)
   })
 
   it("uses strict equality (===) for comparison", () => {
     const template = { a: 0 }
-    const fn = contains(template)
+    const fn = like(template)
     expect(fn({ a: false })).toBe(false)
     expect(fn({ a: "0" })).toBe(false)
     expect(fn({ a: 0 })).toBe(true)
@@ -151,7 +151,7 @@ describe("contains", () => {
   // ISSUE: contains() does not check for own properties only; it will match inherited properties.
   it("matches inherited properties in the object", () => {
     const template = { foo: 1 }
-    const fn = contains(template)
+    const fn = like(template)
     const proto = { foo: 1 }
     const obj = Object.create(proto)
     expect(fn(obj)).toBe(true)
