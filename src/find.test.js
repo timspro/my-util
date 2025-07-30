@@ -156,6 +156,40 @@ describe("findClosest", () => {
       findClosest(arr, 4, { comparator: "abs", key: "length", threshold: -1 })
     ).toBeUndefined()
   })
+
+  it("uses transform as a function (same as map)", () => {
+    const arr = [{ v: 1 }, { v: 5 }, { v: 10 }]
+    const mapFn = (el) => el.v
+    expect(findClosest(arr, 6, { transform: mapFn })).toEqual({ v: 5 })
+    // Should take precedence over key if both are present
+    expect(findClosest(arr, 6, { key: "notUsed", transform: mapFn })).toEqual({ v: 5 })
+  })
+
+  it("uses transform as a string (same as key)", () => {
+    const arr = [{ v: 1 }, { v: 5 }, { v: 10 }]
+    expect(findClosest(arr, 6, { transform: "v" })).toEqual({ v: 5 })
+    // Should take precedence over key if both are present
+    expect(findClosest(arr, 6, { key: "notUsed", transform: "v" })).toEqual({ v: 5 })
+  })
+
+  it("uses transform as a number (same as key)", () => {
+    const arr = [[1], [5], [10]]
+    expect(findClosest(arr, 6, { transform: 0 })).toEqual([5])
+    // Should take precedence over key if both are present
+    expect(findClosest(arr, 6, { key: "notUsed", transform: 0 })).toEqual([5])
+  })
+
+  it("transform does not override key if key is already present and transform is not provided", () => {
+    const arr = [{ v: 1 }, { v: 5 }, { v: 10 }]
+    expect(findClosest(arr, 6, { key: "v" })).toEqual({ v: 5 })
+  })
+
+  it("transform is ignored if not a function, string, or number", () => {
+    const arr = [{ v: 1 }, { v: 5 }, { v: 10 }]
+    // eslint-disable-next-line no-restricted-syntax
+    expect(findClosest(arr, 6, { transform: null, key: "v" })).toEqual({ v: 5 })
+    expect(findClosest(arr, 6, { transform: {}, key: "v" })).toEqual({ v: 5 })
+  })
 })
 
 describe("findClosestAbs", () => {

@@ -159,14 +159,20 @@ export function findClosestGTE(array, desired, { key, map, threshold = Infinity 
  * @param {Array<T>} array
  * @param {V} value The desired value to search for
  * @param {Object} options
- * @param {string=} options.key If specified, will consider the value for each element's key instead of the element itself.
+ * @param {string|number=} options.key If specified, will consider the value for each element's key instead of the element itself.
  * @param {Function=} options.map If specified, will compute value by calling provided function on the element. Takes precedence over key.
+ * @param {string|number|Function=} options.transform Allows combining key and map as one parameter. Useful for piping in passed values.
  * @param {string=} options.comparator "abs", "lt", "lte", "gt", "gte", "abs". Default is "abs" which implies T is number.
  * @param {V=} options.threshold If specified, uses a different initial min/max/difference than positive or negative infinity.
  * @returns {T|undefined}
  */
 export function findClosest(array, value, options = {}) {
-  const { comparator = "abs" } = options
+  const { comparator = "abs", transform } = options
+  if (typeof transform === "function") {
+    options = { ...options, map: transform }
+  } else if (typeof transform === "string" || typeof transform === "number") {
+    options = { ...options, key: transform }
+  }
   switch (comparator) {
     case "lt":
       return findClosestLT(array, value, options)
