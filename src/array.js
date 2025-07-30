@@ -44,38 +44,58 @@ function compareUndefinedNull(a, b) {
 /**
  * Returns an "ascending" comparator, via "<", to be used to sort an array.
  * Undefined or null values are always sorted to the end.
- * @param {String=} key If sorting objects, can specify a key to use to compare.
+ * @param {string|number|Function=} transform
+ *  If a function, calls the provided function on an element to get the value to sort on.
+ *  If a string or number, treats transform as a key and sorts on each element's value at key.
  * @returns {Function}
  */
-export function ascending(key) {
-  if (!key) {
+export function ascending(transform) {
+  if (typeof transform === "function") {
     return (a, b) => {
+      a = transform(a)
+      b = transform(b)
       return compareUndefinedNull(a, b) ?? (a < b ? -1 : b < a ? 1 : 0)
     }
   }
+  if (typeof transform === "string" || typeof transform === "number") {
+    return (a, b) => {
+      const invalid = compareUndefinedNull(a[transform], b[transform])
+      return (
+        invalid ?? (a[transform] < b[transform] ? -1 : b[transform] < a[transform] ? 1 : 0)
+      )
+    }
+  }
   return (a, b) => {
-    return (
-      compareUndefinedNull(a[key], b[key]) ?? (a[key] < b[key] ? -1 : b[key] < a[key] ? 1 : 0)
-    )
+    return compareUndefinedNull(a, b) ?? (a < b ? -1 : b < a ? 1 : 0)
   }
 }
 
 /**
  * Returns a "descending" comparator, via ">", to be used to sort an array.
  * Undefined or null values are always sorted to the end.
- * @param {String=} key If sorting objects, can specify a key to use to compare.
+ * @param {string|number|Function=} transform
+ *  If a function, calls the provided function on an element to get the value to sort on.
+ *  If a string or number, treats transform as a key and sorts on each element's value at key.
  * @returns {Function}
  */
-export function descending(key) {
-  if (!key) {
+export function descending(transform) {
+  if (typeof transform === "function") {
     return (a, b) => {
+      a = transform(a)
+      b = transform(b)
       return compareUndefinedNull(a, b) ?? (a > b ? -1 : b > a ? 1 : 0)
     }
   }
+  if (typeof transform === "string" || typeof transform === "number") {
+    return (a, b) => {
+      const invalid = compareUndefinedNull(a[transform], b[transform])
+      return (
+        invalid ?? (a[transform] > b[transform] ? -1 : b[transform] > a[transform] ? 1 : 0)
+      )
+    }
+  }
   return (a, b) => {
-    return (
-      compareUndefinedNull(a[key], b[key]) ?? (a[key] > b[key] ? -1 : b[key] > a[key] ? 1 : 0)
-    )
+    return compareUndefinedNull(a, b) ?? (a > b ? -1 : b > a ? 1 : 0)
   }
 }
 
@@ -93,142 +113,5 @@ export function multilevel(...comparators) {
       }
     }
     return 0
-  }
-}
-
-function findClosestAbs(array, value, { key, threshold = Infinity } = {}) {
-  let closest
-  if (key) {
-    for (const element of array) {
-      const _value = element[key]
-      const diff = Math.abs(_value - value)
-      if (diff < threshold) {
-        closest = element
-        threshold = diff
-      }
-    }
-  } else {
-    for (const _value of array) {
-      const diff = Math.abs(_value - value)
-      if (diff < threshold) {
-        closest = _value
-        threshold = diff
-      }
-    }
-  }
-  return closest
-}
-
-function findClosestLT(array, value, { key, threshold = -Infinity } = {}) {
-  let closest
-  if (key) {
-    for (const element of array) {
-      const _value = element[key]
-      if (_value < value && _value > threshold) {
-        closest = element
-        threshold = _value
-      }
-    }
-  } else {
-    for (const _value of array) {
-      if (_value < value && _value > threshold) {
-        closest = _value
-        threshold = _value
-      }
-    }
-  }
-  return closest
-}
-
-function findClosestLTE(array, value, { key, threshold = -Infinity } = {}) {
-  let closest
-  if (key) {
-    for (const element of array) {
-      const _value = element[key]
-      if (_value <= value && _value > threshold) {
-        closest = element
-        threshold = _value
-      }
-    }
-  } else {
-    for (const _value of array) {
-      if (_value <= value && _value > threshold) {
-        closest = _value
-        threshold = _value
-      }
-    }
-  }
-  return closest
-}
-
-function findClosestGT(array, value, { key, threshold = Infinity } = {}) {
-  let closest
-  if (key) {
-    for (const element of array) {
-      const _value = element[key]
-      if (_value > value && _value < threshold) {
-        closest = element
-        threshold = _value
-      }
-    }
-  } else {
-    for (const _value of array) {
-      if (_value > value && _value < threshold) {
-        closest = _value
-        threshold = _value
-      }
-    }
-  }
-  return closest
-}
-
-function findClosestGTE(array, value, { key, threshold = Infinity } = {}) {
-  let closest
-  if (key) {
-    for (const element of array) {
-      const _value = element[key]
-      if (_value >= value && _value < threshold) {
-        closest = element
-        threshold = _value
-      }
-    }
-  } else {
-    for (const _value of array) {
-      if (_value >= value && _value < threshold) {
-        closest = _value
-        threshold = _value
-      }
-    }
-  }
-  return closest
-}
-
-/**
- * Find the closest element in an array.
- * If using for strings, need to specify different values for "threshold" and "comparator".
- * "~" and "" are good threshold string values for gt/gte and lt/lte respectively.
- * @param {Array<T>} array
- * @param {T} value
- * @param {Object} options
- * @param {string=} options.key If specified, will consider the value for each element's key instead of the element itself.
- * @param {string=} options.comparator "abs", "lt", "lte", "gt", "gte", "abs". Default is "abs" which implies T is number.
- * @param {T=} options.threshold If specified, uses a different initial min/max/difference than positive or negative infinity.
- * @returns {T|undefined}
- */
-export function findClosest(array, value, options = {}) {
-  const { comparator = "abs" } = options
-  switch (comparator) {
-    case "lt":
-      return findClosestLT(array, value, options)
-    case "lte":
-      return findClosestLTE(array, value, options)
-    case "gt":
-      return findClosestGT(array, value, options)
-    case "gte":
-      return findClosestGTE(array, value, options)
-    case "abs":
-      return findClosestAbs(array, value, options)
-    default:
-      throw new Error(`Unknown comparator: ${comparator}`)
   }
 }

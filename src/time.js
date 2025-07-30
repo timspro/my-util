@@ -152,7 +152,7 @@ export function getTimeRange(start, end, { hours = 0, minutes = 1 } = {}) {
  * @param {number} days
  * @returns {string}
  */
-export function addDays(dateString, days = 0) {
+export function addDays(dateString, { days = 0 } = {}) {
   const [year, month, day] = dateString.split("-").map(Number)
   const date = new Date(Date.UTC(year, month - 1, day))
   date.setUTCDate(date.getUTCDate() + days)
@@ -169,7 +169,7 @@ export function getDateRange(start, end, { limit = 1000 } = {}) {
   const dates = []
   while (start <= end) {
     dates.push(start)
-    start = addDays(start, 1)
+    start = addDays(start, { days: 1 })
     if (dates.length >= limit) {
       break
     }

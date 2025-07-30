@@ -364,53 +364,49 @@ describe("getTimeRange", () => {
 })
 
 describe("addDays", () => {
-  test("adds days within the same month", () => {
-    expect(addDays("2024-06-01", 5)).toBe("2024-06-06")
-    expect(addDays("2024-06-10", 0)).toBe("2024-06-10")
+  test("adds days within the same month (object param)", () => {
+    expect(addDays("2024-06-01", { days: 5 })).toBe("2024-06-06")
+    expect(addDays("2024-06-10", { days: 0 })).toBe("2024-06-10")
   })
 
-  test("adds days with month rollover", () => {
-    expect(addDays("2024-06-28", 5)).toBe("2024-07-03")
+  test("adds days with month rollover (object param)", () => {
+    expect(addDays("2024-06-28", { days: 5 })).toBe("2024-07-03")
   })
 
-  test("adds days with year rollover", () => {
-    expect(addDays("2024-12-30", 5)).toBe("2025-01-04")
+  test("adds days with year rollover (object param)", () => {
+    expect(addDays("2024-12-30", { days: 5 })).toBe("2025-01-04")
   })
 
-  test("subtracts days", () => {
-    expect(addDays("2024-06-10", -10)).toBe("2024-05-31")
+  test("subtracts days (object param)", () => {
+    expect(addDays("2024-06-10", { days: -10 })).toBe("2024-05-31")
   })
 
-  test("handles leap years", () => {
-    expect(addDays("2024-02-28", 1)).toBe("2024-02-29")
-    expect(addDays("2024-02-28", 2)).toBe("2024-03-01")
-    expect(addDays("2023-02-28", 1)).toBe("2023-03-01")
+  test("handles leap years (object param)", () => {
+    expect(addDays("2024-02-28", { days: 1 })).toBe("2024-02-29")
+    expect(addDays("2024-02-28", { days: 2 })).toBe("2024-03-01")
+    expect(addDays("2023-02-28", { days: 1 })).toBe("2023-03-01")
   })
 
-  test("handles negative result across year boundary", () => {
-    expect(addDays("2024-01-01", -1)).toBe("2023-12-31")
+  test("handles negative result across year boundary (object param)", () => {
+    expect(addDays("2024-01-01", { days: -1 })).toBe("2023-12-31")
   })
 
   // DST boundary: adding days across US DST start (spring forward)
-  test("adds days across DST start (spring forward)", () => {
-    // DST starts in US/Eastern on 2024-03-10
-    // Adding 1 day to 2024-03-09 should yield 2024-03-10
-    expect(addDays("2024-03-09", 1)).toBe("2024-03-10")
-    // Adding 2 days to 2024-03-09 should yield 2024-03-11
-    expect(addDays("2024-03-09", 2)).toBe("2024-03-11")
-    // Subtracting 1 day from 2024-03-10 should yield 2024-03-09
-    expect(addDays("2024-03-10", -1)).toBe("2024-03-09")
+  test("adds days across DST start (spring forward) (object param)", () => {
+    expect(addDays("2024-03-09", { days: 1 })).toBe("2024-03-10")
+    expect(addDays("2024-03-09", { days: 2 })).toBe("2024-03-11")
+    expect(addDays("2024-03-10", { days: -1 })).toBe("2024-03-09")
   })
 
   // DST boundary: adding days across US DST end (fall back)
-  test("adds days across DST end (fall back)", () => {
-    // DST ends in US/Eastern on 2024-11-03
-    // Adding 1 day to 2024-11-02 should yield 2024-11-03
-    expect(addDays("2024-11-02", 1)).toBe("2024-11-03")
-    // Adding 2 days to 2024-11-02 should yield 2024-11-04
-    expect(addDays("2024-11-02", 2)).toBe("2024-11-04")
-    // Subtracting 1 day from 2024-11-03 should yield 2024-11-02
-    expect(addDays("2024-11-03", -1)).toBe("2024-11-02")
+  test("adds days across DST end (fall back) (object param)", () => {
+    expect(addDays("2024-11-02", { days: 1 })).toBe("2024-11-03")
+    expect(addDays("2024-11-02", { days: 2 })).toBe("2024-11-04")
+    expect(addDays("2024-11-03", { days: -1 })).toBe("2024-11-02")
+  })
+
+  test("accepts missing options argument (defaults to days = 0)", () => {
+    expect(addDays("2024-06-10")).toBe("2024-06-10")
   })
 })
 
