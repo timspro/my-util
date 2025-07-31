@@ -1,150 +1,150 @@
-export function findClosestAbs(array, desired, { key, map, threshold = Infinity } = {}) {
+export function findClosestAbs(array, desired, { key, cutoff = Infinity } = {}) {
   let closest
-  if (map) {
+  if (typeof key === "function") {
     for (let i = 0; i < array.length; i++) {
       const element = array[i]
-      const value = map(element, i, array)
+      const value = key(element, i, array)
       const diff = Math.abs(value - desired)
-      if (diff < threshold) {
+      if (diff < cutoff) {
         closest = element
-        threshold = diff
+        cutoff = diff
       }
     }
-  } else if (key) {
+  } else if (typeof key === "number" || typeof key === "string") {
     for (const element of array) {
       const value = element[key]
       const diff = Math.abs(value - desired)
-      if (diff < threshold) {
+      if (diff < cutoff) {
         closest = element
-        threshold = diff
+        cutoff = diff
       }
     }
   } else {
     for (const value of array) {
       const diff = Math.abs(value - desired)
-      if (diff < threshold) {
+      if (diff < cutoff) {
         closest = value
-        threshold = diff
+        cutoff = diff
       }
     }
   }
   return closest
 }
 
-export function findClosestLT(array, desired, { key, map, threshold = -Infinity } = {}) {
+export function findClosestLT(array, desired, { key, cutoff = -Infinity } = {}) {
   let closest
-  if (map) {
+  if (typeof key === "function") {
     for (let i = 0; i < array.length; i++) {
       const element = array[i]
-      const value = map(element, i, array)
-      if (value < desired && value > threshold) {
+      const value = key(element, i, array)
+      if (value < desired && value > cutoff) {
         closest = element
-        threshold = value
+        cutoff = value
       }
     }
-  } else if (key) {
+  } else if (typeof key === "number" || typeof key === "string") {
     for (const element of array) {
       const value = element[key]
-      if (value < desired && value > threshold) {
+      if (value < desired && value > cutoff) {
         closest = element
-        threshold = value
+        cutoff = value
       }
     }
   } else {
     for (const value of array) {
-      if (value < desired && value > threshold) {
+      if (value < desired && value > cutoff) {
         closest = value
-        threshold = value
+        cutoff = value
       }
     }
   }
   return closest
 }
 
-export function findClosestLTE(array, desired, { key, map, threshold = -Infinity } = {}) {
+export function findClosestLTE(array, desired, { key, cutoff = -Infinity } = {}) {
   let closest
-  if (map) {
+  if (typeof key === "function") {
     for (let i = 0; i < array.length; i++) {
       const element = array[i]
-      const value = map(element, i, array)
-      if (value <= desired && value > threshold) {
+      const value = key(element, i, array)
+      if (value <= desired && value > cutoff) {
         closest = element
-        threshold = value
+        cutoff = value
       }
     }
-  } else if (key) {
+  } else if (typeof key === "number" || typeof key === "string") {
     for (const element of array) {
       const value = element[key]
-      if (value <= desired && value > threshold) {
+      if (value <= desired && value > cutoff) {
         closest = element
-        threshold = value
+        cutoff = value
       }
     }
   } else {
     for (const value of array) {
-      if (value <= desired && value > threshold) {
+      if (value <= desired && value > cutoff) {
         closest = value
-        threshold = value
+        cutoff = value
       }
     }
   }
   return closest
 }
 
-export function findClosestGT(array, desired, { key, map, threshold = Infinity } = {}) {
+export function findClosestGT(array, desired, { key, cutoff = Infinity } = {}) {
   let closest
-  if (map) {
+  if (typeof key === "function") {
     for (let i = 0; i < array.length; i++) {
       const element = array[i]
-      const value = map(element, i, array)
-      if (value > desired && value < threshold) {
+      const value = key(element, i, array)
+      if (value > desired && value < cutoff) {
         closest = element
-        threshold = value
+        cutoff = value
       }
     }
-  } else if (key) {
+  } else if (typeof key === "number" || typeof key === "string") {
     for (const element of array) {
       const value = element[key]
-      if (value > desired && value < threshold) {
+      if (value > desired && value < cutoff) {
         closest = element
-        threshold = value
+        cutoff = value
       }
     }
   } else {
     for (const value of array) {
-      if (value > desired && value < threshold) {
+      if (value > desired && value < cutoff) {
         closest = value
-        threshold = value
+        cutoff = value
       }
     }
   }
   return closest
 }
 
-export function findClosestGTE(array, desired, { key, map, threshold = Infinity } = {}) {
+export function findClosestGTE(array, desired, { key, cutoff = Infinity } = {}) {
   let closest
-  if (map) {
+  if (typeof key === "function") {
     for (let i = 0; i < array.length; i++) {
       const element = array[i]
-      const value = map(element, i, array)
-      if (value >= desired && value < threshold) {
+      const value = key(element, i, array)
+      if (value >= desired && value < cutoff) {
         closest = element
-        threshold = value
+        cutoff = value
       }
     }
-  } else if (key) {
+  } else if (typeof key === "number" || typeof key === "string") {
     for (const element of array) {
       const value = element[key]
-      if (value >= desired && value < threshold) {
+      if (value >= desired && value < cutoff) {
         closest = element
-        threshold = value
+        cutoff = value
       }
     }
   } else {
     for (const value of array) {
-      if (value >= desired && value < threshold) {
+      if (value >= desired && value < cutoff) {
         closest = value
-        threshold = value
+        cutoff = value
       }
     }
   }
@@ -152,27 +152,24 @@ export function findClosestGTE(array, desired, { key, map, threshold = Infinity 
 }
 
 /**
- * Find the closest element in an array.
- * If using for strings, need to specify different values for "threshold" and "comparator".
- * "~" and "" are good threshold string values for gt/gte and lt/lte respectively.
+ * Find the closest element in an array. If there is a tie, then returns the first matching element by order in the array.
+ * If using for strings, need to specify different values for "cutoff" and "comparator".
+ * "~" and "" are good cutoff string values for gt/gte and lt/lte respectively.
  * @template T, V
  * @param {Array<T>} array
  * @param {V} value The desired value to search for
  * @param {Object} options
- * @param {string|number=} options.key If specified, will consider the value for each element's key instead of the element itself.
- * @param {Function=} options.map If specified, will compute value by calling provided function on the element. Takes precedence over key.
- * @param {string|number|Function=} options.transform Allows combining key and map as one parameter. Useful for piping in passed values.
+ * @param {string|number|Function=} options.key
+ *  If specified, will consider the value for each element's key instead of the element itself.
+ *  If a function, called with the element, index and array (same as .map() callback) to produce the value to sort on.
  * @param {string=} options.comparator "abs", "lt", "lte", "gt", "gte", "abs". Default is "abs" which implies T is number.
- * @param {V=} options.threshold If specified, uses a different initial min/max/difference than positive or negative infinity.
+ * @param {V=} options.cutoff If specified, sets a initial constraint on how close the found value must be.
+ *  For example, if used with "lt", the found element would need to be greater than the cutoff but still less than the desired value.
+ *  If used with "abs", the found element would need to have a difference with the desired value less than the cutoff.
  * @returns {T|undefined}
  */
 export function findClosest(array, value, options = {}) {
-  const { comparator = "abs", transform } = options
-  if (typeof transform === "function") {
-    options = { ...options, map: transform }
-  } else if (typeof transform === "string" || typeof transform === "number") {
-    options = { ...options, key: transform }
-  }
+  const { comparator = "abs" } = options
   switch (comparator) {
     case "lt":
       return findClosestLT(array, value, options)
