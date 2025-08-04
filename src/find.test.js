@@ -7,6 +7,8 @@ const {
   findClosestGT,
   findClosestGTE,
   findClosest,
+  findMin,
+  findMax,
 } = await import("./find.js")
 
 describe("findClosestAbs", () => {
@@ -212,5 +214,73 @@ describe("findClosest", () => {
   it("passes options to underlying function", () => {
     const arr = [{ x: 1 }, { x: 10 }]
     expect(findClosest(arr, 8, { comparator: "abs", key: "x" })).toEqual({ x: 10 })
+  })
+})
+
+describe("findMin", () => {
+  it("returns the minimum value in a numeric array", () => {
+    expect(findMin([3, 1, 4, 2])).toBe(1)
+  })
+
+  it("returns undefined for empty array", () => {
+    expect(findMin([])).toBeUndefined()
+  })
+
+  it("returns the first minimum if there are duplicates", () => {
+    expect(findMin([2, 1, 1, 3])).toBe(1)
+  })
+
+  it("supports key as function", () => {
+    const arr = [{ v: 5 }, { v: 2 }, { v: 8 }]
+    expect(findMin(arr, { key: (e) => e.v })).toEqual({ v: 2 })
+  })
+
+  it("supports key as string", () => {
+    const arr = [{ x: 5 }, { x: 2 }, { x: 8 }]
+    expect(findMin(arr, { key: "x" })).toEqual({ x: 2 })
+  })
+
+  it("supports key as number", () => {
+    const arr = [[5], [2], [8]]
+    expect(findMin(arr, { key: 0 })).toEqual([2])
+  })
+
+  it("respects cutoff", () => {
+    expect(findMin([3, 1, 4, 2], { cutoff: 2 })).toBe(1)
+    expect(findMin([3, 1, 4, 2], { cutoff: 1 })).toBeUndefined()
+  })
+})
+
+describe("findMax", () => {
+  it("returns the maximum value in a numeric array", () => {
+    expect(findMax([3, 1, 4, 2])).toBe(4)
+  })
+
+  it("returns undefined for empty array", () => {
+    expect(findMax([])).toBeUndefined()
+  })
+
+  it("returns the first maximum if there are duplicates", () => {
+    expect(findMax([4, 2, 4, 1])).toBe(4)
+  })
+
+  it("supports key as function", () => {
+    const arr = [{ v: 5 }, { v: 2 }, { v: 8 }]
+    expect(findMax(arr, { key: (e) => e.v })).toEqual({ v: 8 })
+  })
+
+  it("supports key as string", () => {
+    const arr = [{ x: 5 }, { x: 2 }, { x: 8 }]
+    expect(findMax(arr, { key: "x" })).toEqual({ x: 8 })
+  })
+
+  it("supports key as number", () => {
+    const arr = [[5], [2], [8]]
+    expect(findMax(arr, { key: 0 })).toEqual([8])
+  })
+
+  it("respects cutoff", () => {
+    expect(findMax([3, 1, 4, 2], { cutoff: 2 })).toBe(4)
+    expect(findMax([3, 1, 4, 2], { cutoff: 4 })).toBeUndefined()
   })
 })

@@ -185,3 +185,85 @@ export function findClosest(array, value, options = {}) {
       throw new Error(`Unknown comparator: ${comparator}`)
   }
 }
+
+/**
+ * Find the minimum value in an array.
+ * @template T, V
+ * @param {Array<T>} array
+ * @param {Object} $1
+ * @param {string|Function=} $1.key Specifies an alternative to using each element as the value.
+ *  If string, then accesses each element at that key to get value.
+ *  If function, then calls the callback on each element to get value.
+ * @param {V=} $1.cutoff Only values below cutoff will be considered.
+ * @returns {T}
+ */
+export function findMin(array, { key, cutoff = Infinity } = {}) {
+  let closest
+  if (typeof key === "function") {
+    for (let i = 0; i < array.length; i++) {
+      const element = array[i]
+      const value = key(element, i, array)
+      if (value < cutoff) {
+        closest = element
+        cutoff = value
+      }
+    }
+  } else if (typeof key === "number" || typeof key === "string") {
+    for (const element of array) {
+      const value = element[key]
+      if (value < cutoff) {
+        closest = element
+        cutoff = value
+      }
+    }
+  } else {
+    for (const value of array) {
+      if (value < cutoff) {
+        closest = value
+        cutoff = value
+      }
+    }
+  }
+  return closest
+}
+
+/**
+ * Find the maximum value in an array.
+ * @template T, V
+ * @param {Array<T>} array
+ * @param {Object} $1
+ * @param {string|Function=} $1.key Specifies an alternative to using each element as the value.
+ *  If string, then accesses each element at that key to get value.
+ *  If function, then calls the callback on each element to get value.
+ * @param {V=} $1.cutoff Only values above cutoff will be considered.
+ * @returns {T}
+ */
+export function findMax(array, { key, cutoff = -Infinity } = {}) {
+  let closest
+  if (typeof key === "function") {
+    for (let i = 0; i < array.length; i++) {
+      const element = array[i]
+      const value = key(element, i, array)
+      if (value > cutoff) {
+        closest = element
+        cutoff = value
+      }
+    }
+  } else if (typeof key === "number" || typeof key === "string") {
+    for (const element of array) {
+      const value = element[key]
+      if (value > cutoff) {
+        closest = element
+        cutoff = value
+      }
+    }
+  } else {
+    for (const value of array) {
+      if (value > cutoff) {
+        closest = value
+        cutoff = value
+      }
+    }
+  }
+  return closest
+}
