@@ -182,7 +182,7 @@ export function findClosest(array, value, options = {}) {
     case "abs":
       return findClosestAbs(array, value, options)
     default:
-      throw new Error(`Unknown comparator: ${comparator}`)
+      throw new Error(`unknown comparator: ${comparator}`)
   }
 }
 

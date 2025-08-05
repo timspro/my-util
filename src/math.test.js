@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals"
-const { mod, formatPlus, line } = await import("./math.js")
+const { mod, formatPlus, line, sum, average, variance } = await import("./math.js")
 
 describe("mod", () => {
   it("returns n when n is less than m and n is non-negative", () => {
@@ -101,6 +101,102 @@ describe("line", () => {
     expect(f(-1)).toBe(-2)
     expect(f(0)).toBe(0)
     expect(f(1)).toBe(2)
+  })
+})
+
+describe("sum", () => {
+  it("returns 0 for an empty array", () => {
+    expect(sum([])).toBe(0)
+  })
+
+  it("sums a simple array of numbers", () => {
+    expect(sum([1, 2, 3])).toBe(6)
+    expect(sum([-1, 1, 2])).toBe(2)
+  })
+
+  it("sums using a key function", () => {
+    const arr = [{ v: 2 }, { v: 3 }, { v: 4 }]
+    expect(sum(arr, { key: (el) => el.v })).toBe(9)
+    expect(sum(arr, { key: (el, i) => el.v * i })).toBe(0 * 2 + 1 * 3 + 2 * 4) // 0 + 3 + 8 = 11
+  })
+
+  it("sums using a string key", () => {
+    const arr = [{ v: 2 }, { v: 3 }, { v: 4 }]
+    expect(sum(arr, { key: "v" })).toBe(9)
+  })
+
+  it("sums using a numeric key", () => {
+    const arr = [[1], [2], [3]]
+    expect(sum(arr, { key: 0 })).toBe(6)
+  })
+
+  it("handles array of numbers with undefined options", () => {
+    expect(sum([5, 6, 7])).toBe(18)
+    expect(sum([5, 6, 7], undefined)).toBe(18)
+  })
+
+  it("returns NaN if key is string/number and property is missing", () => {
+    expect(sum([{ a: 1 }, {}], { key: "a" })).toBeNaN()
+  })
+})
+
+describe("average", () => {
+  it("computes the mean of a number array", () => {
+    expect(average([1, 2, 3])).toBe(2)
+    expect(average([1, 1, 1, 1])).toBe(1)
+  })
+
+  it("computes the mean using a key function", () => {
+    const arr = [{ v: 2 }, { v: 4 }]
+    expect(average(arr, { key: (el) => el.v })).toBe(3)
+  })
+
+  it("computes the mean using a string key", () => {
+    const arr = [{ v: 2 }, { v: 4 }]
+    expect(average(arr, { key: "v" })).toBe(3)
+  })
+
+  it("computes the mean using a numeric key", () => {
+    const arr = [[2], [4]]
+    expect(average(arr, { key: 0 })).toBe(3)
+  })
+
+  it("throws for empty array", () => {
+    expect(() => average([])).toThrow("cannot compute average of empty array")
+  })
+
+  it("returns NaN if key is string/number and property is missing", () => {
+    expect(average([{ a: 1 }, {}], { key: "a" })).toBeNaN()
+  })
+})
+
+describe("variance", () => {
+  it("computes the variance of a number array", () => {
+    expect(variance([1, 2, 3])).toBeCloseTo(2 / 3)
+    expect(variance([1, 1, 1, 1])).toBe(0)
+  })
+
+  it("computes the variance using a key function", () => {
+    const arr = [{ v: 2 }, { v: 4 }]
+    expect(variance(arr, { key: (el) => el.v })).toBe(1)
+  })
+
+  it("computes the variance using a string key", () => {
+    const arr = [{ v: 2 }, { v: 4 }]
+    expect(variance(arr, { key: "v" })).toBe(1)
+  })
+
+  it("computes the variance using a numeric key", () => {
+    const arr = [[2], [4]]
+    expect(variance(arr, { key: 0 })).toBe(1)
+  })
+
+  it("throws for empty array", () => {
+    expect(() => variance([])).toThrow("cannot compute variance of empty array")
+  })
+
+  it("returns NaN if key is string/number and property is missing", () => {
+    expect(variance([{ a: 1 }, {}], { key: "a" })).toBeNaN()
   })
 })
 

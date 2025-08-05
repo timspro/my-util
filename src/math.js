@@ -24,6 +24,85 @@ export function line([x1, y1], [x2, y2]) {
 }
 
 /**
+ * Calculate the sum of values in an array.
+ * @template T
+ * @param {Array<T>} array
+ * @param {Object} [options]
+ * @param {string|number|((element: T, index: number, array: Array<T>) => number)=} options.key
+ * @returns {number}
+ */
+export function sum(array, { key } = {}) {
+  let total = 0
+  if (typeof key === "function") {
+    for (let i = 0; i < array.length; i++) {
+      total += key(array[i], i, array)
+    }
+  } else if (typeof key === "string" || typeof key === "number") {
+    for (let i = 0; i < array.length; i++) {
+      total += array[i][key]
+    }
+  } else {
+    for (let i = 0; i < array.length; i++) {
+      total += array[i]
+    }
+  }
+  return total
+}
+
+/**
+ * Calculate the average (mean) of values in an array.
+ * @template T
+ * @param {Array<T>} array
+ * @param {Object} [options]
+ * @param {string|number|((element: T, index: number, array: Array<T>) => number)=} options.key
+ * @returns {number}
+ * @throws {Error} If the array is empty.
+ */
+export function average(array, { key } = {}) {
+  if (array.length === 0) {
+    throw new Error("cannot compute average of empty array")
+  }
+  return sum(array, { key }) / array.length
+}
+
+/**
+ * Calculate the variance of values in an array.
+ * @template T
+ * @param {Array<T>} array
+ * @param {Object} [options]
+ * @param {string|number|((element: T, index: number, array: Array<T>) => number)=} options.key
+ * @returns {number}
+ * @throws {Error} If the array is empty.
+ */
+export function variance(array, { key } = {}) {
+  if (array.length === 0) {
+    throw new Error("cannot compute variance of empty array")
+  }
+  const avg = average(array, { key })
+  let total = 0
+  if (typeof key === "function") {
+    for (let i = 0; i < array.length; i++) {
+      const value = key(array[i], i, array)
+      const diff = value - avg
+      total += diff * diff
+    }
+  } else if (typeof key === "string" || typeof key === "number") {
+    for (let i = 0; i < array.length; i++) {
+      const value = array[i][key]
+      const diff = value - avg
+      total += diff * diff
+    }
+  } else {
+    for (let i = 0; i < array.length; i++) {
+      const value = array[i]
+      const diff = value - avg
+      total += diff * diff
+    }
+  }
+  return total / array.length
+}
+
+/**
  * Prepend a plus to a number or string if positive.
  * @param {number|string} number Or string
  * @param {Object} $1

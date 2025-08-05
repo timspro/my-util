@@ -207,7 +207,7 @@ describe("findClosest", () => {
 
   it("throws on unknown comparator", () => {
     expect(() => findClosest([1, 5, 9], 6, { comparator: "foo" })).toThrow(
-      "Unknown comparator: foo"
+      "unknown comparator: foo"
     )
   })
 
