@@ -1,5 +1,5 @@
 export * from "./array.js"
-export { findClosest } from "./find.js"
+export * from "./find.js"
 export * from "./math.js"
 export * from "./object.js"
 export * from "./promise.js"
