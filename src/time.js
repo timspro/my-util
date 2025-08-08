@@ -53,19 +53,27 @@ export function today() {
 }
 
 /**
- * Get the day of the week from a YYYY-MM-DD string.
+ * Get the day of the week index from a YYYY-MM-DD string.
  * @param {string=} string YYYY-MM-DD
- * @returns {string} "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"
+ * @returns {string} 0, 1, 2, 3, 4, 5, 6; 0 is Sunday and, 1 is Monday, ... 6 is Saturday
  */
-export function getDayOfWeek(string = today()) {
+export function getDayIndexInWeek(string = today()) {
   const [year, month, day] = string.split("-").map(Number)
-  const dayOfWeek = new Date(year, month - 1, day)
-    .toLocaleDateString("en-US", { weekday: "long" })
-    .toLowerCase()
-  if (dayOfWeek === "invalid date") {
-    throw new Error(`invalid date passed: ${string}`)
+  const index = new Date(year, month - 1, day).getDay()
+  if (isNaN(index)) {
+    throw new Error(`invalid date: ${string}`)
   }
-  return dayOfWeek
+  return index
+}
+
+/**
+ * Get the minute from a time string.
+ * @param {string} time HH:mm or HH:mm::ss
+ * @returns {number} Between 0 and 59 inclusive
+ */
+export function getMinute(time) {
+  const minute = Number(time.split(":")[1])
+  return minute
 }
 
 /**
