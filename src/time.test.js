@@ -3,6 +3,7 @@ import {
   addDays,
   addTime,
   getDateRange,
+  getDayOfWeek,
   getEasternTime,
   getTime,
   getTimeRange,
@@ -184,6 +185,33 @@ describe("today", () => {
     const expected = getTime().date
     expect(today()).toBe(expected)
     expect(/^\d{4}-\d{2}-\d{2}$/u.test(today())).toBe(true)
+  })
+})
+
+describe("getDayOfWeek", () => {
+  test("returns correct day of week for known dates", () => {
+    expect(getDayOfWeek("2024-06-01")).toBe("saturday")
+    expect(getDayOfWeek("2024-06-02")).toBe("sunday")
+    expect(getDayOfWeek("2024-06-03")).toBe("monday")
+    expect(getDayOfWeek("2024-06-04")).toBe("tuesday")
+    expect(getDayOfWeek("2024-06-05")).toBe("wednesday")
+    expect(getDayOfWeek("2024-06-06")).toBe("thursday")
+    expect(getDayOfWeek("2024-06-07")).toBe("friday")
+  })
+
+  test("returns correct day for leap day", () => {
+    expect(getDayOfWeek("2024-02-29")).toBe("thursday")
+  })
+
+  test("defaults to today() if no argument is given", () => {
+    // Should match today()'s day of week
+    const todayDate = today()
+    expect(getDayOfWeek()).toBe(getDayOfWeek(todayDate))
+  })
+
+  test("handles invalid date strings (returns 'invalid date')", () => {
+    expect(() => getDayOfWeek("not-a-date")).toThrow(/invalid date/u)
+    expect(getDayOfWeek("2024-02-31")).toBe("saturday")
   })
 })
 

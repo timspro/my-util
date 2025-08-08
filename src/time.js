@@ -53,6 +53,22 @@ export function today() {
 }
 
 /**
+ * Get the day of the week from a YYYY-MM-DD string.
+ * @param {string=} string YYYY-MM-DD
+ * @returns {string} "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"
+ */
+export function getDayOfWeek(string = today()) {
+  const [year, month, day] = string.split("-").map(Number)
+  const dayOfWeek = new Date(year, month - 1, day)
+    .toLocaleDateString("en-US", { weekday: "long" })
+    .toLowerCase()
+  if (dayOfWeek === "invalid date") {
+    throw new Error(`invalid date passed: ${string}`)
+  }
+  return dayOfWeek
+}
+
+/**
  * Checks if the string represents a valid YYYY-MM-DD date.
  * This will return false for dates like "2024-02-31".
  * @param {string} string
