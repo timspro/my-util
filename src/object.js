@@ -55,3 +55,37 @@ export function like(template) {
     return true
   }
 }
+
+/**
+ * Deeply merges one or more source objects into a target object.
+ * If the property values are objects, they are merged recursively.
+ * Non-object properties (including arrays) are directly assigned to the target.
+ * @param {Object} target The target object that will receive the merged properties.
+ * @param {...Object} sources The source objects whose properties will be merged into the target.
+ * @returns {Object} The target object with the merged properties from all source objects.
+ */
+export function deepMerge(target, ...sources) {
+  for (const source of sources) {
+    const keys = Object.keys(source)
+    for (const key of keys) {
+      if (!Object.hasOwn(source, key)) {
+        continue
+      }
+      const targetValue = target[key]
+      const sourceValue = source[key]
+      if (Array.isArray(sourceValue)) {
+        target[key] = sourceValue
+      } else if (
+        targetValue &&
+        typeof targetValue === "object" &&
+        sourceValue &&
+        typeof sourceValue === "object"
+      ) {
+        deepMerge(targetValue, sourceValue)
+      } else {
+        target[key] = sourceValue
+      }
+    }
+  }
+  return target
+}

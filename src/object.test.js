@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-syntax */
 import { jest } from "@jest/globals"
-import { deleteUndefinedValues, like, mutateValues, via } from "./object.js"
+import { deepMerge, deleteUndefinedValues, like, mutateValues, via } from "./object.js"
 
 describe("mutateValues", () => {
   it("mutates values in the object using the callback", () => {
@@ -157,5 +157,103 @@ describe("contains", () => {
     expect(fn(obj)).toBe(true)
     obj.foo = 2
     expect(fn(obj)).toBe(false)
+  })
+})
+
+describe("deepMerge", () => {
+  it("merges flat objects", () => {
+    const target = { a: 1, b: 2 }
+    const source = { b: 3, c: 4 }
+    expect(deepMerge(target, source)).toEqual({ a: 1, b: 3, c: 4 })
+    expect(target).toEqual({ a: 1, b: 3, c: 4 })
+  })
+
+  it("deeply merges nested objects", () => {
+    const target = { a: { x: 1, y: 2 }, b: 2 }
+    const source = { a: { y: 3, z: 4 }, b: 5 }
+    expect(deepMerge(target, source)).toEqual({ a: { x: 1, y: 3, z: 4 }, b: 5 })
+    expect(target).toEqual({ a: { x: 1, y: 3, z: 4 }, b: 5 })
+  })
+
+  it("overwrites arrays instead of merging them", () => {
+    const target = { arr: [1, 2], a: 1 }
+    const source = { arr: [3, 4] }
+    expect(deepMerge(target, source)).toEqual({ arr: [3, 4], a: 1 })
+  })
+
+  it("merges multiple sources left-to-right", () => {
+    const target = { a: 1 }
+    const s1 = { b: 2 }
+    const s2 = { a: 3, c: 4 }
+    expect(deepMerge(target, s1, s2)).toEqual({ a: 3, b: 2, c: 4 })
+  })
+
+  it("does not merge non-object values, just assigns", () => {
+    const target = { a: { x: 1 } }
+    const source = { a: 2 }
+    expect(deepMerge(target, source)).toEqual({ a: 2 })
+  })
+
+  it("handles empty sources", () => {
+    const target = { a: 1 }
+    expect(deepMerge(target)).toEqual({ a: 1 })
+    expect(deepMerge(target, {})).toEqual({ a: 1 })
+  })
+
+  it("handles empty target", () => {
+    const target = {}
+    const source = { a: 1 }
+    expect(deepMerge(target, source)).toEqual({ a: 1 })
+  })
+
+  it("does not merge inherited properties from sources", () => {
+    const proto = { x: 1 }
+    const source = Object.create(proto)
+    source.a = 2
+    const target = {}
+    expect(deepMerge(target, source)).toEqual({ a: 2 })
+    expect("x" in target).toBe(false)
+  })
+
+  it("merges deeply with multiple sources", () => {
+    const target = { a: { x: 1 } }
+    const s1 = { a: { y: 2 } }
+    const s2 = { a: { z: 3 } }
+    expect(deepMerge(target, s1, s2)).toEqual({ a: { x: 1, y: 2, z: 3 } })
+  })
+
+  it("does not merge if source value is null", () => {
+    const target = { a: { x: 1 } }
+    const source = { a: null }
+    expect(deepMerge(target, source)).toEqual({ a: null })
+  })
+
+  it("does not merge if target value is null", () => {
+    const target = { a: null }
+    const source = { a: { x: 1 } }
+    expect(deepMerge(target, source)).toEqual({ a: { x: 1 } })
+  })
+
+  it("does not merge arrays deeply", () => {
+    const target = { a: [1, 2, 3] }
+    const source = { a: [4, 5] }
+    expect(deepMerge(target, source)).toEqual({ a: [4, 5] })
+  })
+
+  it("does not merge non-enumerable properties from source", () => {
+    const target = {}
+    const source = {}
+    Object.defineProperty(source, "hidden", {
+      value: 123,
+      enumerable: false,
+    })
+    expect(deepMerge(target, source)).toEqual({})
+    expect("hidden" in target).toBe(false)
+  })
+
+  it("returns the target object", () => {
+    const target = { a: 1 }
+    const result = deepMerge(target, { b: 2 })
+    expect(result).toBe(target)
   })
 })
