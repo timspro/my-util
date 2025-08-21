@@ -1,9 +1,9 @@
 {
   "name": "@tim-code/my-util",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "",
   "type": "module",
-  "author": "",
+  "author": "Tim Sprowl",
   "license": "MIT",
   "sideEffects": false,
   "main": "src/index.js",
