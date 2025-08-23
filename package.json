@@ -1,6 +1,6 @@
 {
   "name": "@tim-code/my-util",
-  "version": "0.2.7",
+  "version": "0.3.0",
   "description": "",
   "type": "module",
   "author": "Tim Sprowl",
@@ -9,8 +9,14 @@
   "main": "src/index.js",
   "exports": {
     ".": "./src/index.js",
+    "./array": "./src/array.js",
+    "./find": "./src/find.js",
     "./fs": "./src/fs.js",
-    "./run": "./src/run.js"
+    "./math": "./src/math.js",
+    "./object": "./src/object.js",
+    "./promise": "./src/promise.js",
+    "./run": "./src/run.js",
+    "./time": "./src/time.js"
   },
   "scripts": {
     "test": "node --no-warnings --experimental-vm-modules node_modules/.bin/jest"

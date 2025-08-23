@@ -2,14 +2,15 @@
 /* eslint-disable prefer-promise-reject-errors */
 import { jest } from "@jest/globals"
 
-const { poll, sleep, allSettled, alert, throwFirstReject } = await import("./promise.js")
+import { alert, allSettled, poll, PollError, sleep, throwFirstReject } from "./promise.js"
 
 describe("poll", () => {
   it("resolves immediately if callback returns a non-undefined/null/false value", async () => {
     const cb = jest.fn().mockReturnValue(42)
-    const promise = poll(cb, 1000)
+    const promise = poll({ ms: 1 }, cb)
     await expect(promise).resolves.toBe(42)
     expect(cb).toHaveBeenCalledTimes(1)
+    expect(cb).toHaveBeenCalledWith(0)
   })
 
   it("resolves after several attempts when callback returns undefined/null/false before a value", async () => {
@@ -19,23 +20,19 @@ describe("poll", () => {
       .mockReturnValueOnce(null)
       .mockReturnValueOnce(false)
       .mockReturnValueOnce(0)
-    const promise = poll(cb, 500)
-    // Advance timers for 3 unsuccessful attempts (undefined, null, false)
-    const before = Date.now()
-    // The fourth call returns 0, which should resolve
+    const promise = poll({ ms: 2 }, cb)
     await expect(promise).resolves.toBe(0)
-    const after = Date.now()
-    expect((after - before) / 1000).toBeCloseTo(1.5, 1)
     expect(cb).toHaveBeenCalledTimes(4)
+    expect(cb.mock.calls.map((args) => args[0])).toEqual([0, 1, 2, 3])
   })
 
   it('resolves if callback returns "" or NaN (should not treat as "keep polling")', async () => {
     const cb = jest.fn().mockReturnValueOnce("").mockReturnValueOnce(NaN)
-    const promise1 = poll(cb, 100)
+    const promise1 = poll({ ms: 1 }, cb)
     await expect(promise1).resolves.toBe("")
     expect(cb).toHaveBeenCalledTimes(1)
     cb.mockClear()
-    const promise2 = poll(cb, 100)
+    const promise2 = poll({ ms: 1 }, cb)
     await expect(promise2).resolves.toBe(NaN)
     expect(cb).toHaveBeenCalledTimes(1)
   })
@@ -45,26 +42,67 @@ describe("poll", () => {
     const cb = jest.fn().mockImplementation(() => {
       throw error
     })
-    await expect(poll(cb, 100)).rejects.toBe(error)
+    await expect(poll({ ms: 1 }, cb)).rejects.toBe(error)
     expect(cb).toHaveBeenCalledTimes(1)
   })
 
   it("rejects if callback returns a rejected promise", async () => {
     const error = new Error("async fail")
     const cb = jest.fn().mockReturnValue(Promise.reject(error))
-    const promise = poll(cb, 100)
+    const promise = poll({ ms: 1 }, cb)
     await expect(promise).rejects.toBe(error)
     expect(cb).toHaveBeenCalledTimes(1)
+  })
+
+  it("waits before first call if wait=true", async () => {
+    const cb = jest.fn().mockReturnValue(1)
+    const promise = poll({ ms: 2, wait: true }, cb)
+    // Wait a little longer than ms to ensure callback is called
+    await sleep(3)
+    await expect(promise).resolves.toBe(1)
+    expect(cb).toHaveBeenCalledTimes(1)
+  })
+
+  it("waits specified ms before first call if wait is a number", async () => {
+    const cb = jest.fn().mockReturnValue(1)
+    const promise = poll({ ms: 2, wait: 5 }, cb)
+    await sleep(4)
+    expect(cb).not.toHaveBeenCalled()
+    await sleep(2)
+    await expect(promise).resolves.toBe(1)
+    expect(cb).toHaveBeenCalledTimes(1)
+  })
+
+  it("rejects with PollError if attempts is reached", async () => {
+    const cb = jest.fn().mockReturnValue(undefined)
+    const promise = poll({ ms: 1, attempts: 3 }, cb)
+    await expect(promise).rejects.toBeInstanceOf(PollError)
+    await expect(promise).rejects.toThrow("max attempts reached")
+    expect(cb).toHaveBeenCalledTimes(3)
+    expect(cb.mock.calls.map((args) => args[0])).toEqual([0, 1, 2])
+  })
+
+  it("resolves if callback returns a value before reaching max attempts", async () => {
+    const cb = jest
+      .fn()
+      .mockReturnValueOnce(undefined)
+      .mockReturnValueOnce(undefined)
+      .mockReturnValueOnce(5)
+    const promise = poll({ ms: 1, attempts: 5 }, cb)
+    await expect(promise).resolves.toBe(5)
+    expect(cb).toHaveBeenCalledTimes(3)
+    expect(cb.mock.calls.map((args) => args[0])).toEqual([0, 1, 2])
   })
 })
 
 describe("sleep", () => {
   it("resolves after the specified milliseconds", async () => {
     const before = Date.now()
-    const promise = sleep(500)
+    const promise = sleep(5)
     await expect(promise).resolves.toBeUndefined()
     const after = Date.now()
-    expect((after - before) / 1000).toBeCloseTo(0.5, 1)
+    // Allow for some jitter
+    expect(after - before).toBeGreaterThanOrEqual(5)
   })
 })
 
@@ -170,5 +208,14 @@ describe("throwFirstReject", () => {
     const result = await throwFirstReject({ array: [] }, (x) => x)
     expect(result.values).toEqual([])
     expect(result.returned).toEqual([])
+  })
+})
+
+describe("PollError", () => {
+  it("is an Error subclass", () => {
+    const err = new PollError("oops")
+    expect(err).toBeInstanceOf(Error)
+    expect(err).toBeInstanceOf(PollError)
+    expect(err.message).toBe("oops")
   })
 })

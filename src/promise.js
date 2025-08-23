@@ -1,28 +1,44 @@
 import { chunk } from "./array.js"
 
+export class PollError extends Error {}
+
 /**
  * Calls a function immediately and then every X milliseconds until the function does not return undefined, null or false.
  * Note that other falsy values such as 0 or "" or NaN will resolve and be returned.
- * This will never resolve if callback always returns undefined, null, or false. I may add a "max attempt" or "timeout" option at some point.
- * @param {Function} callback
- * @param {number} milliseconds
- * @returns The result of the callback
+ * This will never resolve if callback always returns undefined, null, or false.
+ * @param {number} ms Milliseconds to wait between invocations
+ * @param {boolean|number=} wait If true, waits before initially calling the callback. If a number, waits that many milliseconds.
+ * @param {number=} attempts If a number, limits to that many invocations of callback before throwing a PollError.
+ * @param {Function} callback The argument is the number of times the callback has been called previously.
+ * @returns {any} The result of the callback
  */
-export function poll(callback, milliseconds) {
+export function poll({ ms, wait = false, attempts = undefined }, callback) {
   return new Promise((resolve, reject) => {
+    let attemptIndex = 0
     const resolver = async () => {
+      if (typeof attempts === "number" && attemptIndex >= attempts) {
+        reject(new PollError("max attempts reached"))
+        return
+      }
       try {
-        const result = await callback()
+        const result = await callback(attemptIndex)
+        attemptIndex++
         if (result !== undefined && result !== null && result !== false) {
           resolve(result)
         } else {
-          setTimeout(resolver, milliseconds)
+          setTimeout(resolver, ms)
         }
       } catch (error) {
         reject(error)
       }
     }
-    resolver()
+    if (typeof wait === "number") {
+      setTimeout(resolver, wait)
+    } else if (wait === true) {
+      setTimeout(resolver, ms)
+    } else {
+      resolver()
+    }
   })
 }
 
