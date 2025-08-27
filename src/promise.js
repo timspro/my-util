@@ -139,6 +139,9 @@ export function alert(result) {
   return result
 }
 
+// might want to delete since I don't think this is used and allSettled does something very similar
+// could add "earlyAbort" to allSettled which would cause it to stop if there's an error in the chunk, capturing one use case for this
+// Promise.all() is problematic... what happens to the promises that didn't throw? what if some of those error as well?
 /**
  * Parallelize executions of a function using `Promise.all()`.
  * This is useful because usually you want to set a limit to the number of parallel requests possible at once.
