@@ -2,7 +2,7 @@
 /* eslint-disable prefer-promise-reject-errors */
 import { jest } from "@jest/globals"
 
-import { alert, allSettled, poll, PollError, sleep, throwFirstReject } from "./promise.js"
+import { alert, allSettled, poll, PollError, sleep, throwFirstReject, intervalLimiter } from "./promise.js"
 
 describe("poll", () => {
   it("resolves immediately if callback returns a non-undefined/null/false value", async () => {
@@ -104,6 +104,14 @@ describe("sleep", () => {
     // Allow for some jitter
     expect(after - before).toBeGreaterThanOrEqual(5)
   })
+
+  it("resolves immediately if ms is negative", async () => {
+    const before = Date.now()
+    const promise = sleep(-10)
+    await expect(promise).resolves.toBeUndefined()
+    const after = Date.now()
+    expect(after - before).toBeLessThan(5)
+  })
 })
 
 describe("allSettled", () => {
@@ -153,6 +161,60 @@ describe("allSettled", () => {
     expect(result.returned).toEqual([])
     expect(result.errors).toEqual([])
     expect(result.results).toEqual([])
+  })
+
+  it("calls limiter after each chunk if provided", async () => {
+    const arr = [1, 2, 3, 4, 5]
+    const calls = []
+    const limiterCalls = []
+    const cb = (x) => {
+      calls.push(x)
+      return x
+    }
+    const limiter = jest.fn(async (n) => {
+      limiterCalls.push(n)
+      // simulate async delay
+      await sleep(1)
+    })
+    const result = await allSettled({ array: arr, limit: 2, limiter }, cb)
+    expect(result.values).toEqual([1, 2, 3, 4, 5])
+    expect(calls).toEqual([1, 2, 3, 4, 5])
+    expect(limiter).toHaveBeenCalledTimes(3)
+    expect(limiterCalls).toEqual([2, 2, 1])
+  })
+})
+
+describe("intervalLimiter", () => {
+  it("does not delay until limit is reached", async () => {
+    const limiter = intervalLimiter({ limit: 3, interval: 10 })
+    const before = Date.now()
+    await limiter(1)
+    await limiter(1)
+    await limiter(1) // should reach limit here, triggers wait
+    const after = Date.now()
+    expect(after - before).toBeGreaterThanOrEqual(10)
+  })
+
+  it("resets count and interval after waiting", async () => {
+    const limiter = intervalLimiter({ limit: 2, interval: 5 })
+    const before = Date.now()
+    await limiter(1)
+    await limiter(1) // triggers wait
+    const afterFirst = Date.now()
+    await limiter(1)
+    await limiter(1) // triggers wait again
+    const afterSecond = Date.now()
+    expect(afterFirst - before).toBeGreaterThanOrEqual(5)
+    expect(afterSecond - afterFirst).toBeGreaterThanOrEqual(5)
+  })
+
+  it("handles added < limit with no delay", async () => {
+    const limiter = intervalLimiter({ limit: 10, interval: 5 })
+    const before = Date.now()
+    await limiter(3)
+    await limiter(3)
+    const after = Date.now()
+    expect(after - before).toBeLessThan(5)
   })
 })
 

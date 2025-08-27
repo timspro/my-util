@@ -44,11 +44,14 @@ export function poll({ ms, wait = false, attempts = undefined }, callback) {
 
 /**
  * Sleep for X milliseconds.
- * @param {number} milliseconds
+ * @param {number} ms Milliseconds; returns immediately if negative
  */
-export async function sleep(milliseconds) {
+export async function sleep(ms) {
+  if (ms < 0) {
+    return
+  }
   await new Promise((resolve) => {
-    setTimeout(resolve, milliseconds)
+    setTimeout(resolve, ms)
   })
 }
 
@@ -63,12 +66,14 @@ export async function sleep(milliseconds) {
  *  - "errors": The "reason" property for each "result" object that did not have a status of "fulfilled".
  * @param {Object} $1
  * @param {Array} $1.array
- * @param {number=} $1.limit If not provided, each call is done in parallel.
+ * @param {number=} $1.limit The number of calls to do in parallel. If not provided, each call is done in parallel.
+ * @param {Function=} $1.limiter A function awaited after a group of parallel calls is processed.
+ *  It is called with the number of parallel calls processed. Could be as simple as `() => sleep(10000)` if you wanted to wait 10 seconds between.
  * @param {boolean=} $1.flatten Flattens values before returning; useful if promises return arrays
  * @param {Function} callback
  * @returns {Object} {results, values, returned, errors}
  */
-export async function allSettled({ array, limit, flatten = false }, callback) {
+export async function allSettled({ array, limit, limiter, flatten = false }, callback) {
   const results = []
   let returned = []
   let values = []
@@ -87,12 +92,35 @@ export async function allSettled({ array, limit, flatten = false }, callback) {
         errors.push(reason)
       }
     }
+    await limiter?.(elements.length)
   }
   if (flatten) {
     values = values.flat()
     returned = returned.flat()
   }
   return { values, returned, errors, results }
+}
+
+/**
+ * Creates a function that can be used with allSettled to limit the number of elements processed in a time interval.
+ * Once the limit is reached, waits until the start of a new interval before returning.
+ * @param {Object} $1
+ * @param {number} $1.limit The maximum number of elements to be processed in the interval
+ * @param {Function=} $1.interval The length of the interval in milliseconds. Default is one minute.
+ * @returns {Function} Returned function expects to be called with the number of elements added since last call.
+ */
+export function intervalLimiter({ limit, interval = 1000 * 60 }) {
+  let count = 0
+  let startTimestamp = Date.now()
+  return async (added) => {
+    count += added
+    if (count >= limit) {
+      const currentTimestamp = Date.now()
+      await sleep(interval - (currentTimestamp - startTimestamp))
+      startTimestamp = Date.now()
+      count = 0
+    }
+  }
 }
 
 /**
