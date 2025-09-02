@@ -4,6 +4,7 @@ const readFileMock = jest.fn()
 const statMock = jest.fn()
 const tmpdirMock = jest.fn()
 const gunzipMock = jest.fn()
+const gzipMock = jest.fn()
 const writeFileMock = jest.fn()
 jest.unstable_mockModule("node:fs/promises", () => ({
   readFile: readFileMock,
@@ -15,6 +16,7 @@ jest.unstable_mockModule("node:os", () => ({
 }))
 jest.unstable_mockModule("node:zlib", () => ({
   gunzip: gunzipMock,
+  gzip: gzipMock,
 }))
 jest.unstable_mockModule("node:util", () => ({
   promisify: (mock) => mock,
@@ -22,15 +24,23 @@ jest.unstable_mockModule("node:util", () => ({
 
 // Now import the module under test
 const mod = await import("./fs.js")
-const { getJSON, writeJSON, getCompressedJSON, pathExists, makeTempDirectory } = mod
+const { readJSON, writeJSON, pathExists, makeTempDirectory } = mod
 
-describe("getJSON", () => {
+describe("readJSON", () => {
   beforeEach(() => jest.clearAllMocks())
   it("parses JSON from file", async () => {
     readFileMock.mockResolvedValue(Buffer.from('{"a":1}'))
-    const result = await getJSON("foo.json")
+    const result = await readJSON("foo.json")
     expect(result).toEqual({ a: 1 })
     expect(readFileMock).toHaveBeenCalledWith("foo.json")
+  })
+  it("decompresses and parses JSON from .gz file", async () => {
+    readFileMock.mockResolvedValue(Buffer.from("gzipped"))
+    gunzipMock.mockResolvedValue(Buffer.from('{"b":2}'))
+    const result = await readJSON("bar.gz")
+    expect(result).toEqual({ b: 2 })
+    expect(readFileMock).toHaveBeenCalledWith("bar.gz")
+    expect(gunzipMock).toHaveBeenCalledWith(Buffer.from("gzipped"))
   })
 })
 
@@ -55,20 +65,18 @@ describe("writeJSON", () => {
     await writeJSON("foo.json", { x: 2 }, { indent: 0 })
     expect(writeFileMock).toHaveBeenCalledWith("foo.json", '{"x":2}')
   })
-})
-
-describe("getCompressedJSON", () => {
-  beforeEach(() => jest.clearAllMocks())
-  it("reads, decompresses, and parses JSON", async () => {
-    readFileMock.mockResolvedValue(Buffer.from("gzipped"))
-    gunzipMock.mockResolvedValue(Buffer.from('{"b":2}'))
-    const result = await getCompressedJSON("bar.gz")
-    expect(result).toEqual({ b: 2 })
-    expect(readFileMock).toHaveBeenCalledWith("bar.gz")
-    expect(gunzipMock).toHaveBeenCalled()
+  it("compresses and writes JSON to .gz file", async () => {
+    gzipMock.mockResolvedValue(Buffer.from("compressed"))
+    await writeJSON("foo.gz", { y: 3 })
+    // Should gzip the JSON string and write the compressed buffer
+    expect(gzipMock).toHaveBeenCalledWith(JSON.stringify({ y: 3 }, undefined, 2))
+    expect(writeFileMock).toHaveBeenCalledWith("foo.gz", Buffer.from("compressed"))
   })
-  it("throws for bad filename", async () => {
-    await expect(getCompressedJSON("bar")).rejects.toThrow(/a compressed file/u)
+  it("compresses and writes JSON with custom indent to .gz file", async () => {
+    gzipMock.mockResolvedValue(Buffer.from("compressed"))
+    await writeJSON("foo.gz", { y: 3 }, { indent: 0 })
+    expect(gzipMock).toHaveBeenCalledWith(JSON.stringify({ y: 3 }, undefined, 0))
+    expect(writeFileMock).toHaveBeenCalledWith("foo.gz", Buffer.from("compressed"))
   })
 })
 

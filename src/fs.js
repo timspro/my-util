@@ -1,47 +1,40 @@
 import { readFile, stat, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { promisify } from "node:util"
-import { gunzip as _gunzip } from "node:zlib"
+import { gunzip as _gunzip, gzip as _gzip } from "node:zlib"
 
 const gunzip = promisify(_gunzip)
+const gzip = promisify(_gzip)
 
 // the integration tests for this file are the s3-fs integration tests in lambda-integrations
 // changes to this file should be tested against lambda-integrations' integration tests
 
 /**
- * Get JSON from a path.
+ * Get JSON from a path. If path ends with .gz, will automatically decompress data.
  * @param {string} path
  * @returns {Object|Array}
  */
-export async function getJSON(path) {
-  const buffer = await readFile(path)
+export async function readJSON(path) {
+  let buffer = await readFile(path)
+  if (path.endsWith(".gz")) {
+    buffer = await gunzip(buffer)
+  }
   return JSON.parse(buffer.toString())
 }
 
 /**
- * Write JSON to a path.
+ * Write JSON to a path. If path ends with .gz, will automatically compress data.
  * @param {string} path
  * @param {Object|Array} object
  * @param {Object} $1
  * @param {number=} $1.indent Indent used to format JSON object. Default 2. If 0, does not indent object.
  */
 export async function writeJSON(path, object, { indent = 2 } = {}) {
-  const string = JSON.stringify(object, undefined, indent)
-  await writeFile(path, string)
-}
-
-/**
- * Get gzipped JSON from a path.
- * @param {string} path
- * @returns {Object|Array}
- */
-export async function getCompressedJSON(path) {
-  if (!path.endsWith(".gz")) {
-    throw new Error("path does not suggest a compressed file")
+  let data = JSON.stringify(object, undefined, indent)
+  if (path.endsWith(".gz")) {
+    data = await gzip(data)
   }
-  const buffer = await readFile(path)
-  const uncompressed = await gunzip(buffer)
-  return JSON.parse(uncompressed.toString())
+  await writeFile(path, data)
 }
 
 /**
