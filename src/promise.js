@@ -70,10 +70,15 @@ export async function sleep(ms) {
  * @param {Function=} $1.limiter A function awaited after a group of parallel calls is processed.
  *  It is called with the number of parallel calls processed. Could be as simple as `() => sleep(10000)` if you wanted to wait 10 seconds between.
  * @param {boolean=} $1.flatten Flattens values before returning; useful if promises return arrays
+ * @param {boolean=} $1.abort If true, will return early if there are errors.
+ *  If false (default), will process all elements in the array (like Promise.allSettled()).
  * @param {Function} callback
  * @returns {Object} {results, values, returned, errors}
  */
-export async function allSettled({ array, limit, limiter, flatten = false }, callback) {
+export async function allSettled(
+  { array, limit, limiter, flatten = false, abort = false },
+  callback
+) {
   const results = []
   let returned = []
   let values = []
@@ -91,6 +96,9 @@ export async function allSettled({ array, limit, limiter, flatten = false }, cal
       } else {
         errors.push(reason)
       }
+    }
+    if (abort && errors.length) {
+      break
     }
     await limiter?.(elements.length)
   }

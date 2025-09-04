@@ -153,6 +153,7 @@ export function findClosestGTE(array, desired, { key, cutoff = Infinity } = {}) 
 
 /**
  * Find the closest element in an array. If there is a tie, then returns the first matching element by order in the array.
+ * If some values are undefined or null, they will be ignored. If no element is found, returns undefined.
  * If using for strings, need to specify different values for "cutoff" and "comparator".
  * "~" and "" are good cutoff string values for gt/gte and lt/lte respectively.
  * @template T, V

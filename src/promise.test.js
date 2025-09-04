@@ -2,7 +2,15 @@
 /* eslint-disable prefer-promise-reject-errors */
 import { jest } from "@jest/globals"
 
-import { alert, allSettled, poll, PollError, sleep, throwFirstReject, intervalLimiter } from "./promise.js"
+import {
+  alert,
+  allSettled,
+  intervalLimiter,
+  poll,
+  PollError,
+  sleep,
+  throwFirstReject,
+} from "./promise.js"
 
 describe("poll", () => {
   it("resolves immediately if callback returns a non-undefined/null/false value", async () => {
@@ -181,6 +189,22 @@ describe("allSettled", () => {
     expect(calls).toEqual([1, 2, 3, 4, 5])
     expect(limiter).toHaveBeenCalledTimes(3)
     expect(limiterCalls).toEqual([2, 2, 1])
+  })
+
+  it("returns early if abort=true and any error occurs", async () => {
+    // Should process only up to the first chunk with a rejection, then stop
+    const arr = [1, 2, 3, 4, 5, 6]
+    const cb = jest
+      .fn()
+      .mockImplementation((x) => (x === 2 || x === 4 ? Promise.reject(`fail${x}`) : x))
+    // limit=2 so chunks: [1,2], [3,4], [5,6]
+    const result = await allSettled({ array: arr, limit: 2, abort: true }, cb)
+    // The first chunk: [1,2] => 1 fulfilled, 1 rejected
+    // Should stop after first chunk with error
+    expect(result.values.length).toBe(2)
+    expect(result.errors).toEqual(["fail2"])
+    expect(cb).toHaveBeenCalledTimes(2)
+    // Should not process [3,4] or [5,6]
   })
 })
 
