@@ -337,3 +337,14 @@ export function findLastFrom(array, fromIndex, callback) {
   }
   return array[foundIndex]
 }
+
+/**
+ * Returns truthy if argument is truthy and falsy otherwise.
+ * Meant to used with find(): `array.find(isTruthy)`
+ * @template T
+ * @param {T} anything
+ * @returns {T}
+ */
+export function isTruthy(anything) {
+  return anything
+}

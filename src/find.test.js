@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax */
 import { describe, expect, it } from "@jest/globals"
 
 const {
@@ -13,6 +14,7 @@ const {
   findFrom,
   findLastIndexFrom,
   findLastFrom,
+  isTruthy,
 } = await import("./find.js")
 
 describe("findClosestAbs", () => {
@@ -400,5 +402,29 @@ describe("findLastFrom", () => {
     expect(called[0][0]).toBe(30)
     expect(called[0][1]).toBe(2)
     expect(called[0][2]).toBe(arr)
+  })
+})
+
+describe("isTruthy", () => {
+  it("returns the argument if it is truthy", () => {
+    expect(isTruthy(1)).toBe(1)
+    expect(isTruthy("foo")).toBe("foo")
+    expect(isTruthy({})).toEqual({})
+    expect(isTruthy([])).toEqual([])
+    expect(isTruthy(true)).toBe(true)
+  })
+
+  it("returns the argument if it is falsy", () => {
+    expect(isTruthy(0)).toBe(0)
+    expect(isTruthy("")).toBe("")
+    expect(isTruthy(null)).toBe(null)
+    expect(isTruthy(undefined)).toBe(undefined)
+    expect(isTruthy(false)).toBe(false)
+    expect(isTruthy(NaN)).toBe(NaN)
+  })
+
+  it("can be used with Array.prototype.find to filter out falsy values", () => {
+    const arr = [0, null, undefined, false, "", "hello", 42]
+    expect(arr.find(isTruthy)).toBe("hello")
   })
 })
