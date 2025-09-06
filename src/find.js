@@ -268,3 +268,72 @@ export function findMax(array, { key, cutoff = -Infinity } = {}) {
   }
   return closest
 }
+
+/**
+ * Like Array.prototype.findIndex but starts from given index.
+ * @template T
+ * @param {Array<T>} array
+ * @param {number} fromIndex
+ * @param {(value: T, index: number, array: Array<T>) => boolean} callback
+ * @returns {number}
+ */
+export function findIndexFrom(array, fromIndex, callback) {
+  for (let i = fromIndex; i < array.length; i++) {
+    if (callback(array[i], i, array)) {
+      return i
+    }
+  }
+  return -1
+}
+
+/**
+ * Like Array.prototype.find but starts from given index.
+ * @template T
+ * @param {Array<T>} array
+ * @param {number} fromIndex
+ * @param {(value: T, index: number, array: Array<T>) => boolean} callback
+ * @returns {T|undefined}
+ */
+export function findFrom(array, fromIndex, callback) {
+  const foundIndex = findIndexFrom(array, fromIndex, callback)
+  if (foundIndex < 0) {
+    return undefined
+  }
+  return array[foundIndex]
+}
+
+/**
+ * Like Array.prototype.findLastIndex but starts from given index.
+ * @template T
+ * @param {Array<T>} array
+ * @param {number} fromIndex If greater or equal to length, coerces to last index in array.
+ * @param {(value: T, index: number, array: Array<T>) => boolean} callback
+ * @returns {number}
+ */
+export function findLastIndexFrom(array, fromIndex, callback) {
+  if (fromIndex >= array.length) {
+    fromIndex = array.length - 1
+  }
+  for (let i = fromIndex; i >= 0; i--) {
+    if (callback(array[i], i, array)) {
+      return i
+    }
+  }
+  return -1
+}
+
+/**
+ * Like Array.prototype.findLast but starts from given index.
+ * @template T
+ * @param {Array<T>} array
+ * @param {number} fromIndex
+ * @param {(value: T, index: number, array: Array<T>) => boolean} callback
+ * @returns {T|undefined}
+ */
+export function findLastFrom(array, fromIndex, callback) {
+  const foundIndex = findLastIndexFrom(array, fromIndex, callback)
+  if (foundIndex < 0) {
+    return undefined
+  }
+  return array[foundIndex]
+}
