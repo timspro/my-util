@@ -288,53 +288,39 @@ describe("findMax", () => {
 })
 
 describe("findTruthy", () => {
-  it("returns the first truthy value in a simple array", () => {
-    expect(findTruthy([0, false, null, 2, 3], {})).toBe(2)
-    expect(findTruthy([0, false, null, undefined], {})).toBeUndefined()
+  it("returns the first truthy value in array", () => {
+    expect(findTruthy([0, null, false, 2, 3], {})).toBe(2)
   })
 
-  it("returns the first truthy value in a range [from, to]", () => {
-    expect(findTruthy([0, 1, 2, 0, 3, 0], { from: 2, to: 5 })).toBe(2)
-    expect(findTruthy([0, 0, 0, 4, 0], { from: 1, to: 3 })).toBe(4)
-    expect(findTruthy([0, 0, 0, 0], { from: 1, to: 2 })).toBeUndefined()
-  })
-
-  it("returns the first truthy value when searching backwards (from > to)", () => {
-    expect(findTruthy([0, 1, 2, 0, 3, 0], { from: 4, to: 1 })).toBe(3)
-    expect(findTruthy([0, 0, 0, 4, 0], { from: 3, to: 0 })).toBe(4)
-    expect(findTruthy([0, 0, 0, 0], { from: 2, to: 0 })).toBeUndefined()
+  it("returns undefined if no truthy value", () => {
+    expect(findTruthy([0, null, false], {})).toBeUndefined()
   })
 
   it("supports key as function", () => {
     const arr = [{ v: 0 }, { v: 2 }, { v: 0 }]
     expect(findTruthy(arr, { key: (e) => e.v })).toEqual({ v: 2 })
-    expect(findTruthy(arr, { key: (e) => e.v, from: 2, to: 0 })).toEqual({ v: 2 })
-    expect(findTruthy(arr, { key: (e) => e.v, from: 0, to: 0 })).toBeUndefined()
   })
 
   it("supports key as string", () => {
     const arr = [{ x: 0 }, { x: 2 }, { x: 0 }]
     expect(findTruthy(arr, { key: "x" })).toEqual({ x: 2 })
-    expect(findTruthy(arr, { key: "x", from: 2, to: 0 })).toEqual({ x: 2 })
-    expect(findTruthy(arr, { key: "x", from: 0, to: 0 })).toBeUndefined()
   })
 
   it("supports key as number", () => {
     const arr = [[0], [2], [0]]
     expect(findTruthy(arr, { key: 0 })).toEqual([2])
-    expect(findTruthy(arr, { key: 0, from: 2, to: 0 })).toEqual([2])
-    expect(findTruthy(arr, { key: 0, from: 0, to: 0 })).toBeUndefined()
   })
 
-  it("returns undefined for empty array", () => {
-    expect(findTruthy([], {})).toBeUndefined()
-    expect(findTruthy([], { from: 0, to: 0 })).toBeUndefined()
+  it("respects from and until (forward)", () => {
+    const arr = [0, 1, 2, 3]
+    expect(findTruthy(arr, { from: 2, until: 4 })).toBe(2)
+    expect(findTruthy(arr, { from: 1, until: 3 })).toBe(1)
+    expect(findTruthy(arr, { from: 3, until: 4 })).toBe(3)
+    expect(findTruthy(arr, { from: 3, until: 3 })).toBeUndefined()
   })
 
-  it("returns undefined if from/to out of bounds", () => {
-    expect(findTruthy([1, 2, 3], { from: 10, to: 12 })).toBeUndefined()
-    expect(findTruthy([1, 2, 3], { from: -5, to: -1 })).toBeUndefined()
-    expect(findTruthy([1, 2, 3], { from: 2, to: 10 })).toBe(3)
-    expect(findTruthy([1, 2, 3], { from: 10, to: 2 })).toBe(3)
+  it("returns undefined if from >= until", () => {
+    expect(findTruthy([0, 1, 2], { from: 2, until: 2 })).toBeUndefined()
+    expect(findTruthy([0, 1, 2], { from: 3, until: 2 })).toBeUndefined()
   })
 })

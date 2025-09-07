@@ -279,61 +279,31 @@ export function findMax(array, { key, cutoff = -Infinity } = {}) {
  *  If string, then accesses each element at that key to get value.
  *  If function, then calls the callback on each element to get value.
  * @param {number=} $1.from Numeric index to start from: inclusive, defaults to 0
- * @param {number=} $1.to Numeric index to end at: inclusive, defaults to `array.length - 1`
+ * @param {number=} $1.until Numeric index to end at: exclusive, defaults to `array.length`
  * @returns {T}
  */
-export function findTruthy(array, { key, from = 0, to = array.length - 1 }) {
+export function findTruthy(array, { key, from = 0, until = array.length } = {}) {
   if (typeof key === "function") {
-    if (from <= to) {
-      for (let i = from; i <= to; i++) {
-        const element = array[i]
-        const value = key(element, i, array)
-        if (value) {
-          return element
-        }
-      }
-    } else {
-      for (let i = from; i >= to; i--) {
-        const element = array[i]
-        const value = key(element, i, array)
-        if (value) {
-          return element
-        }
+    for (let i = from; i < until; i++) {
+      const element = array[i]
+      const value = key(element, i, array)
+      if (value) {
+        return element
       }
     }
   } else if (typeof key === "number" || typeof key === "string") {
-    if (from <= to) {
-      for (let i = from; i <= to; i++) {
-        const element = array[i]
-        const value = element[key]
-        if (value) {
-          return element
-        }
-      }
-    } else {
-      for (let i = from; i >= to; i--) {
-        const element = array[i]
-        const value = element[key]
-        if (value) {
-          return element
-        }
+    for (let i = from; i < until; i++) {
+      const element = array[i]
+      const value = element[key]
+      if (value) {
+        return element
       }
     }
   } else {
-    // eslint-disable-next-line no-lonely-if
-    if (from <= to) {
-      for (let i = from; i <= to; i++) {
-        const value = array[i]
-        if (value) {
-          return value
-        }
-      }
-    } else {
-      for (let i = from; i >= to; i--) {
-        const value = array[i]
-        if (value) {
-          return value
-        }
+    for (let i = from; i < until; i++) {
+      const value = array[i]
+      if (value) {
+        return value
       }
     }
   }
