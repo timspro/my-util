@@ -270,81 +270,72 @@ export function findMax(array, { key, cutoff = -Infinity } = {}) {
 }
 
 /**
- * Like Array.prototype.findIndex but starts from given index.
+ * Find the first truthy value in an array.
+ * Supports "from" and "to" being reversed to "find last truthy".
  * @template T
  * @param {Array<T>} array
- * @param {number} fromIndex
- * @param {(value: T, index: number, array: Array<T>) => boolean} callback
- * @returns {number}
- */
-export function findIndexFrom(array, fromIndex, callback) {
-  for (let i = fromIndex; i < array.length; i++) {
-    if (callback(array[i], i, array)) {
-      return i
-    }
-  }
-  return -1
-}
-
-/**
- * Like Array.prototype.find but starts from given index.
- * @template T
- * @param {Array<T>} array
- * @param {number} fromIndex
- * @param {(value: T, index: number, array: Array<T>) => boolean} callback
- * @returns {T|undefined}
- */
-export function findFrom(array, fromIndex, callback) {
-  const foundIndex = findIndexFrom(array, fromIndex, callback)
-  if (foundIndex < 0) {
-    return undefined
-  }
-  return array[foundIndex]
-}
-
-/**
- * Like Array.prototype.findLastIndex but starts from given index.
- * @template T
- * @param {Array<T>} array
- * @param {number} fromIndex If greater or equal to length, coerces to last index in array.
- * @param {(value: T, index: number, array: Array<T>) => boolean} callback
- * @returns {number}
- */
-export function findLastIndexFrom(array, fromIndex, callback) {
-  if (fromIndex >= array.length) {
-    fromIndex = array.length - 1
-  }
-  for (let i = fromIndex; i >= 0; i--) {
-    if (callback(array[i], i, array)) {
-      return i
-    }
-  }
-  return -1
-}
-
-/**
- * Like Array.prototype.findLast but starts from given index.
- * @template T
- * @param {Array<T>} array
- * @param {number} fromIndex
- * @param {(value: T, index: number, array: Array<T>) => boolean} callback
- * @returns {T|undefined}
- */
-export function findLastFrom(array, fromIndex, callback) {
-  const foundIndex = findLastIndexFrom(array, fromIndex, callback)
-  if (foundIndex < 0) {
-    return undefined
-  }
-  return array[foundIndex]
-}
-
-/**
- * Returns truthy if argument is truthy and falsy otherwise.
- * Meant to used with find(): `array.find(isTruthy)`
- * @template T
- * @param {T} anything
+ * @param {Object} $1
+ * @param {string|Function=} $1.key Specifies an alternative to using each element as the value.
+ *  If string, then accesses each element at that key to get value.
+ *  If function, then calls the callback on each element to get value.
+ * @param {number=} $1.from Numeric index to start from: inclusive, defaults to 0
+ * @param {number=} $1.to Numeric index to end at: inclusive, defaults to `array.length - 1`
  * @returns {T}
  */
-export function isTruthy(anything) {
-  return anything
+export function findTruthy(array, { key, from = 0, to = array.length - 1 }) {
+  if (typeof key === "function") {
+    if (from <= to) {
+      for (let i = from; i <= to; i++) {
+        const element = array[i]
+        const value = key(element, i, array)
+        if (value) {
+          return element
+        }
+      }
+    } else {
+      for (let i = from; i >= to; i--) {
+        const element = array[i]
+        const value = key(element, i, array)
+        if (value) {
+          return element
+        }
+      }
+    }
+  } else if (typeof key === "number" || typeof key === "string") {
+    if (from <= to) {
+      for (let i = from; i <= to; i++) {
+        const element = array[i]
+        const value = element[key]
+        if (value) {
+          return element
+        }
+      }
+    } else {
+      for (let i = from; i >= to; i--) {
+        const element = array[i]
+        const value = element[key]
+        if (value) {
+          return element
+        }
+      }
+    }
+  } else {
+    // eslint-disable-next-line no-lonely-if
+    if (from <= to) {
+      for (let i = from; i <= to; i++) {
+        const value = array[i]
+        if (value) {
+          return value
+        }
+      }
+    } else {
+      for (let i = from; i >= to; i--) {
+        const value = array[i]
+        if (value) {
+          return value
+        }
+      }
+    }
+  }
+  return undefined
 }

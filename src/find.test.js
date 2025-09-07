@@ -10,11 +10,7 @@ const {
   findClosest,
   findMin,
   findMax,
-  findIndexFrom,
-  findFrom,
-  findLastIndexFrom,
-  findLastFrom,
-  isTruthy,
+  findTruthy,
 } = await import("./find.js")
 
 describe("findClosestAbs", () => {
@@ -291,140 +287,54 @@ describe("findMax", () => {
   })
 })
 
-describe("findIndexFrom", () => {
-  it("returns the index of the first matching element from fromIndex", () => {
-    expect(findIndexFrom([1, 2, 3, 4], 1, (x) => x > 2)).toBe(2)
-    expect(findIndexFrom([1, 2, 3, 4], 2, (x) => x > 2)).toBe(2)
-    expect(findIndexFrom([1, 2, 3, 4], 3, (x) => x > 2)).toBe(3)
+describe("findTruthy", () => {
+  it("returns the first truthy value in a simple array", () => {
+    expect(findTruthy([0, false, null, 2, 3], {})).toBe(2)
+    expect(findTruthy([0, false, null, undefined], {})).toBeUndefined()
   })
 
-  it("returns -1 if no element matches", () => {
-    expect(findIndexFrom([1, 2, 3, 4], 2, (x) => x > 10)).toBe(-1)
+  it("returns the first truthy value in a range [from, to]", () => {
+    expect(findTruthy([0, 1, 2, 0, 3, 0], { from: 2, to: 5 })).toBe(2)
+    expect(findTruthy([0, 0, 0, 4, 0], { from: 1, to: 3 })).toBe(4)
+    expect(findTruthy([0, 0, 0, 0], { from: 1, to: 2 })).toBeUndefined()
   })
 
-  it("returns -1 for empty array", () => {
-    expect(findIndexFrom([], 0, () => true)).toBe(-1)
+  it("returns the first truthy value when searching backwards (from > to)", () => {
+    expect(findTruthy([0, 1, 2, 0, 3, 0], { from: 4, to: 1 })).toBe(3)
+    expect(findTruthy([0, 0, 0, 4, 0], { from: 3, to: 0 })).toBe(4)
+    expect(findTruthy([0, 0, 0, 0], { from: 2, to: 0 })).toBeUndefined()
   })
 
-  it("passes correct arguments to callback", () => {
-    const arr = [10, 20, 30]
-    const called = []
-    findIndexFrom(arr, 1, (value, index, array) => {
-      called.push([value, index, array])
-      return false
-    })
-    expect(called[0][0]).toBe(20)
-    expect(called[0][1]).toBe(1)
-    expect(called[0][2]).toBe(arr)
-  })
-})
-
-describe("findFrom", () => {
-  it("returns the first matching element from fromIndex", () => {
-    expect(findFrom([1, 2, 3, 4], 1, (x) => x > 2)).toBe(3)
-    expect(findFrom([1, 2, 3, 4], 2, (x) => x > 2)).toBe(3)
-    expect(findFrom([1, 2, 3, 4], 3, (x) => x > 2)).toBe(4)
+  it("supports key as function", () => {
+    const arr = [{ v: 0 }, { v: 2 }, { v: 0 }]
+    expect(findTruthy(arr, { key: (e) => e.v })).toEqual({ v: 2 })
+    expect(findTruthy(arr, { key: (e) => e.v, from: 2, to: 0 })).toEqual({ v: 2 })
+    expect(findTruthy(arr, { key: (e) => e.v, from: 0, to: 0 })).toBeUndefined()
   })
 
-  it("returns undefined if no element matches", () => {
-    expect(findFrom([1, 2, 3, 4], 2, (x) => x > 10)).toBeUndefined()
+  it("supports key as string", () => {
+    const arr = [{ x: 0 }, { x: 2 }, { x: 0 }]
+    expect(findTruthy(arr, { key: "x" })).toEqual({ x: 2 })
+    expect(findTruthy(arr, { key: "x", from: 2, to: 0 })).toEqual({ x: 2 })
+    expect(findTruthy(arr, { key: "x", from: 0, to: 0 })).toBeUndefined()
   })
 
-  it("returns undefined for empty array", () => {
-    expect(findFrom([], 0, () => true)).toBeUndefined()
-  })
-
-  it("passes correct arguments to callback", () => {
-    const arr = [10, 20, 30]
-    const called = []
-    findFrom(arr, 1, (value, index, array) => {
-      called.push([value, index, array])
-      return false
-    })
-    expect(called[0][0]).toBe(20)
-    expect(called[0][1]).toBe(1)
-    expect(called[0][2]).toBe(arr)
-  })
-})
-
-describe("findLastIndexFrom", () => {
-  it("returns the index of the last matching element from fromIndex (backwards)", () => {
-    expect(findLastIndexFrom([1, 2, 3, 4], 2, (x) => x < 3)).toBe(1)
-    expect(findLastIndexFrom([1, 2, 3, 4], 3, (x) => x < 3)).toBe(1)
-    expect(findLastIndexFrom([1, 2, 3, 4], 1, (x) => x < 3)).toBe(1)
-    expect(findLastIndexFrom([1, 2, 3, 4], 0, (x) => x < 3)).toBe(0)
-  })
-
-  it("returns -1 if no element matches", () => {
-    expect(findLastIndexFrom([1, 2, 3, 4], 3, (x) => x > 10)).toBe(-1)
-  })
-
-  it("returns -1 for empty array", () => {
-    expect(findLastIndexFrom([], 0, () => true)).toBe(-1)
-  })
-
-  it("passes correct arguments to callback", () => {
-    const arr = [10, 20, 30]
-    const called = []
-    findLastIndexFrom(arr, 2, (value, index, array) => {
-      called.push([value, index, array])
-      return false
-    })
-    expect(called[0][0]).toBe(30)
-    expect(called[0][1]).toBe(2)
-    expect(called[0][2]).toBe(arr)
-  })
-})
-
-describe("findLastFrom", () => {
-  it("returns the last matching element from fromIndex (backwards)", () => {
-    expect(findLastFrom([1, 2, 3, 4], 2, (x) => x < 3)).toBe(2)
-    expect(findLastFrom([1, 2, 3, 4], 3, (x) => x < 3)).toBe(2)
-    expect(findLastFrom([1, 2, 3, 4], 1, (x) => x < 3)).toBe(2)
-    expect(findLastFrom([1, 2, 3, 4], 0, (x) => x < 3)).toBe(1)
-  })
-
-  it("returns undefined if no element matches", () => {
-    expect(findLastFrom([1, 2, 3, 4], 3, (x) => x > 10)).toBeUndefined()
+  it("supports key as number", () => {
+    const arr = [[0], [2], [0]]
+    expect(findTruthy(arr, { key: 0 })).toEqual([2])
+    expect(findTruthy(arr, { key: 0, from: 2, to: 0 })).toEqual([2])
+    expect(findTruthy(arr, { key: 0, from: 0, to: 0 })).toBeUndefined()
   })
 
   it("returns undefined for empty array", () => {
-    expect(findLastFrom([], 0, () => true)).toBeUndefined()
+    expect(findTruthy([], {})).toBeUndefined()
+    expect(findTruthy([], { from: 0, to: 0 })).toBeUndefined()
   })
 
-  it("passes correct arguments to callback", () => {
-    const arr = [10, 20, 30]
-    const called = []
-    findLastFrom(arr, 2, (value, index, array) => {
-      called.push([value, index, array])
-      return false
-    })
-    expect(called[0][0]).toBe(30)
-    expect(called[0][1]).toBe(2)
-    expect(called[0][2]).toBe(arr)
-  })
-})
-
-describe("isTruthy", () => {
-  it("returns the argument if it is truthy", () => {
-    expect(isTruthy(1)).toBe(1)
-    expect(isTruthy("foo")).toBe("foo")
-    expect(isTruthy({})).toEqual({})
-    expect(isTruthy([])).toEqual([])
-    expect(isTruthy(true)).toBe(true)
-  })
-
-  it("returns the argument if it is falsy", () => {
-    expect(isTruthy(0)).toBe(0)
-    expect(isTruthy("")).toBe("")
-    expect(isTruthy(null)).toBe(null)
-    expect(isTruthy(undefined)).toBe(undefined)
-    expect(isTruthy(false)).toBe(false)
-    expect(isTruthy(NaN)).toBe(NaN)
-  })
-
-  it("can be used with Array.prototype.find to filter out falsy values", () => {
-    const arr = [0, null, undefined, false, "", "hello", 42]
-    expect(arr.find(isTruthy)).toBe("hello")
+  it("returns undefined if from/to out of bounds", () => {
+    expect(findTruthy([1, 2, 3], { from: 10, to: 12 })).toBeUndefined()
+    expect(findTruthy([1, 2, 3], { from: -5, to: -1 })).toBeUndefined()
+    expect(findTruthy([1, 2, 3], { from: 2, to: 10 })).toBe(3)
+    expect(findTruthy([1, 2, 3], { from: 10, to: 2 })).toBe(3)
   })
 })
