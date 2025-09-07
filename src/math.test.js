@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals"
-const { mod, formatPlus, line, sum, average, variance } = await import("./math.js")
+const { mod, formatPlus, line, sum, average, variance, range } = await import("./math.js")
 
 describe("mod", () => {
   it("returns n when n is less than m and n is non-negative", () => {
@@ -253,5 +253,49 @@ describe("formatPlus", () => {
     expect(formatPlus(true)).toBeUndefined()
     expect(formatPlus(Symbol("x"))).toBeUndefined()
     expect(formatPlus(NaN)).toBeUndefined()
+  })
+})
+
+describe("range", () => {
+  it("returns an empty array if start >= end", () => {
+    expect(range(5, 5)).toEqual([])
+    expect(range(10, 5)).toEqual([])
+  })
+
+  it("returns a sequence from start to end-1 with default increment 1", () => {
+    expect(range(0, 3)).toEqual([0, 1, 2])
+    expect(range(2, 6)).toEqual([2, 3, 4, 5])
+  })
+
+  it("returns a sequence with a custom positive increment", () => {
+    expect(range(0, 5, 2)).toEqual([0, 2, 4])
+    expect(range(1, 8, 3)).toEqual([1, 4, 7])
+  })
+  it("works with negative start and end", () => {
+    expect(range(-3, 1)).toEqual([-3, -2, -1, 0])
+    expect(range(-5, -2)).toEqual([-5, -4, -3])
+  })
+
+  it("returns an empty array if increment is zero", () => {
+    expect(range(0, 5, 0)).toEqual([])
+  })
+
+  it("returns an empty array if increment is negative and start < end", () => {
+    expect(range(0, 5, -1)).toEqual([])
+    expect(range(2, 6, -2)).toEqual([])
+  })
+
+  it("returns an empty array if increment is negative and start > end", () => {
+    expect(range(5, 0, -1)).toEqual([])
+    expect(range(3, -2, -2)).toEqual([])
+  })
+
+  it("returns an empty array if increment is positive and start > end", () => {
+    expect(range(5, 0, 1)).toEqual([])
+    expect(range(2, -2, 2)).toEqual([])
+  })
+
+  it("handles floating point increments", () => {
+    expect(range(0, 1, 0.25)).toEqual([0, 0.25, 0.5, 0.75])
   })
 })

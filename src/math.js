@@ -123,3 +123,21 @@ export function formatPlus(number, { zero = false } = {}) {
   }
   return undefined
 }
+
+/**
+ * Create an array of numbers progressing from start up to, but not including, end.
+ * @param {number} start
+ * @param {number=} end
+ * @param {number=} step
+ * @returns {number[]}
+ */
+export function range(start, end, increment = 1) {
+  if (!(increment > 0)) {
+    return []
+  }
+  const results = []
+  for (let i = start; i < end; i += increment) {
+    results.push(i)
+  }
+  return results
+}
