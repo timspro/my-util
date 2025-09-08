@@ -7,6 +7,7 @@ import {
   // getDayOfWeek, // removed, replaced by getDayIndexInWeek
   getEasternTime,
   getMinute,
+  getStartOfWeek,
   getTime,
   getTimeRange,
   isDate,
@@ -490,5 +491,33 @@ describe("getDateRange", () => {
   // ISSUE: getDateRange does not validate that start/end are valid dates, so invalid input may yield unexpected results.
   test("handles invalid date input (returns empty array if start > end lexically)", () => {
     expect(getDateRange("not-a-date", "2024-01-01")).toEqual([])
+  })
+})
+
+// Tests for getStartOfWeek (newly exported function)
+describe("getStartOfWeek", () => {
+  test("returns same date if input is Sunday", () => {
+    expect(getStartOfWeek("2024-06-02")).toBe("2024-06-02") // Sunday
+    expect(getDayIndexInWeek("2024-06-02")).toBe(0)
+  })
+
+  test("returns previous Sunday for a weekday", () => {
+    expect(getStartOfWeek("2024-06-05")).toBe("2024-06-02") // Wednesday -> previous Sunday
+    expect(getStartOfWeek("2024-06-03")).toBe("2024-06-02") // Monday -> previous Sunday
+    expect(getStartOfWeek("2024-06-08")).toBe("2024-06-02") // Saturday -> previous Sunday
+  })
+
+  test("works for leap day", () => {
+    // 2024-02-29 is Thursday (4), so start of week should be 2024-02-25
+    expect(getStartOfWeek("2024-02-29")).toBe("2024-02-25")
+  })
+
+  test("works for year boundary", () => {
+    // 2023-01-01 is Sunday
+    expect(getStartOfWeek("2023-01-01")).toBe("2023-01-01")
+    // 2023-01-07 is Saturday, so start of week is 2023-01-01
+    expect(getStartOfWeek("2023-01-07")).toBe("2023-01-01")
+    // 2023-01-02 is Monday, so start of week is 2023-01-01
+    expect(getStartOfWeek("2023-01-02")).toBe("2023-01-01")
   })
 })

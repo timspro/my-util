@@ -200,3 +200,14 @@ export function getDateRange(start, end, { limit = 1000 } = {}) {
   }
   return dates
 }
+
+/**
+ * Get the first date in the week containing the passed date string.
+ * @param {string} dateString YYYY-MM-DD
+ * @returns {string} YYYY-MM-DD
+ */
+export function getStartOfWeek(dateString) {
+  const index = getDayIndexInWeek(dateString)
+  const start = addDays(dateString, { days: -index })
+  return start
+}
