@@ -323,4 +323,42 @@ describe("findTruthy", () => {
     expect(findTruthy([0, 1, 2], { from: 2, until: 2 })).toBeUndefined()
     expect(findTruthy([0, 1, 2], { from: 3, until: 2 })).toBeUndefined()
   })
+
+  it("respects the new 'to' option (inclusive end)", () => {
+    const arr = [0, 1, 2, 3]
+    expect(findTruthy(arr, { from: 1, to: 2 })).toBe(1)
+    expect(findTruthy(arr, { from: 2, to: 3 })).toBe(2)
+    expect(findTruthy(arr, { from: 2, to: 2 })).toBe(2)
+    expect(findTruthy(arr, { from: 2, to: 1 })).toBeUndefined()
+    expect(findTruthy(arr, { from: 0, to: 0 })).toBeUndefined()
+    expect(findTruthy(arr, { from: 1, to: 1 })).toBe(1)
+  })
+
+  it("prefers 'to' over 'until' if both are given", () => {
+    const arr = [0, 1, 2, 3]
+    // 'to' = 1, so only index 1 is checked, even though until=4
+    expect(findTruthy(arr, { from: 1, until: 4, to: 1 })).toBe(1)
+    // 'to' = 2, so indices 1 and 2 checked, even though until=2 (which would skip 2)
+    expect(findTruthy(arr, { from: 1, until: 2, to: 2 })).toBe(1)
+  })
+
+  it("works with key as function and 'to'", () => {
+    const arr = [{ v: 0 }, { v: 0 }, { v: 2 }, { v: 3 }]
+    expect(findTruthy(arr, { key: (e) => e.v, from: 1, to: 2 })).toEqual({ v: 2 })
+    expect(findTruthy(arr, { key: (e) => e.v, from: 1, to: 1 })).toBeUndefined()
+  })
+
+  it("works with key as string and 'to'", () => {
+    const arr = [{ x: 0 }, { x: 2 }, { x: 0 }]
+    expect(findTruthy(arr, { key: "x", from: 0, to: 1 })).toEqual({ x: 2 })
+    expect(findTruthy(arr, { key: "x", from: 1, to: 1 })).toEqual({ x: 2 })
+    expect(findTruthy(arr, { key: "x", from: 2, to: 1 })).toBeUndefined()
+  })
+
+  it("works with key as number and 'to'", () => {
+    const arr = [[0], [2], [0]]
+    expect(findTruthy(arr, { key: 0, from: 0, to: 1 })).toEqual([2])
+    expect(findTruthy(arr, { key: 0, from: 1, to: 1 })).toEqual([2])
+    expect(findTruthy(arr, { key: 0, from: 2, to: 1 })).toBeUndefined()
+  })
 })

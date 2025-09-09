@@ -280,11 +280,15 @@ export function findMax(array, { key, cutoff = -Infinity } = {}) {
  *  If function, then calls the callback on each element to get value.
  * @param {number=} $1.from Numeric index to start from: inclusive, defaults to 0
  * @param {number=} $1.until Numeric index to end at: exclusive, defaults to `array.length`
+ * @param {number=} $1.to Numeric index to end at: inclusive, defaults to `array.length - 1`, takes precedence over "until"
  * @returns {T}
  */
-export function findTruthy(array, { key, from = 0, until = array.length } = {}) {
+export function findTruthy(
+  array,
+  { key, from = 0, until = array.length, to = until - 1 } = {}
+) {
   if (typeof key === "function") {
-    for (let i = from; i < until; i++) {
+    for (let i = from; i <= to; i++) {
       const element = array[i]
       const value = key(element, i, array)
       if (value) {
@@ -292,7 +296,7 @@ export function findTruthy(array, { key, from = 0, until = array.length } = {}) 
       }
     }
   } else if (typeof key === "number" || typeof key === "string") {
-    for (let i = from; i < until; i++) {
+    for (let i = from; i <= to; i++) {
       const element = array[i]
       const value = element[key]
       if (value) {
@@ -300,7 +304,7 @@ export function findTruthy(array, { key, from = 0, until = array.length } = {}) 
       }
     }
   } else {
-    for (let i = from; i < until; i++) {
+    for (let i = from; i <= to; i++) {
       const value = array[i]
       if (value) {
         return value
