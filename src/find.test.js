@@ -361,4 +361,78 @@ describe("findTruthy", () => {
     expect(findTruthy(arr, { key: 0, from: 1, to: 1 })).toEqual([2])
     expect(findTruthy(arr, { key: 0, from: 2, to: 1 })).toBeUndefined()
   })
+
+  // New tests for reverse mode and its interaction with from, to, until
+  it("finds last truthy value with reverse=true and default from/to", () => {
+    const arr = [0, 1, 2, 3, 0]
+    expect(findTruthy(arr, { reverse: true })).toBe(3)
+  })
+
+  it("finds last truthy value with reverse=true and custom from/to", () => {
+    const arr = [0, 1, 2, 3, 4]
+    // from=3, to=1 (reverse), should check indices 3,2,1
+    expect(findTruthy(arr, { reverse: true, from: 3, to: 1 })).toBe(3)
+    // from=4, to=2, should check 4,3,2
+    expect(findTruthy(arr, { reverse: true, from: 4, to: 2 })).toBe(4)
+    // from=2, to=0, should check 2,1,0
+    expect(findTruthy(arr, { reverse: true, from: 2, to: 0 })).toBe(2)
+    // from=2, to=2, should check only 2
+    expect(findTruthy(arr, { reverse: true, from: 2, to: 2 })).toBe(2)
+    // from=2, to=3, should check 2,1,0 (since to > from, loop doesn't run)
+    expect(findTruthy(arr, { reverse: true, from: 2, to: 3 })).toBeUndefined()
+  })
+
+  it("finds last truthy value with reverse=true and until", () => {
+    const arr = [0, 1, 2, 3, 0]
+    // until=1, so to=until+1=2, from=4, should check 4,3,2
+    expect(findTruthy(arr, { reverse: true, until: 1 })).toBe(3)
+    expect(findTruthy(arr, { reverse: true, until: 2 })).toBe(3)
+    expect(findTruthy(arr, { reverse: true, until: 3 })).toBe(undefined)
+  })
+
+  it("finds last truthy value with reverse=true and key as function", () => {
+    const arr = [{ v: 0 }, { v: 2 }, { v: 0 }]
+    expect(findTruthy(arr, { key: (e) => e.v, reverse: true })).toEqual({ v: 2 })
+  })
+
+  it("finds last truthy value with reverse=true and key as string", () => {
+    const arr = [{ x: 0 }, { x: 2 }, { x: 0 }]
+    expect(findTruthy(arr, { key: "x", reverse: true })).toEqual({ x: 2 })
+  })
+
+  it("finds last truthy value with reverse=true and key as number", () => {
+    const arr = [[0], [2], [0]]
+    expect(findTruthy(arr, { key: 0, reverse: true })).toEqual([2])
+  })
+
+  it("returns undefined if no truthy value in reverse mode", () => {
+    expect(findTruthy([0, 0, 0], { reverse: true })).toBeUndefined()
+  })
+
+  it("returns undefined if reverse=true and from < to", () => {
+    expect(findTruthy([0, 1, 2], { reverse: true, from: 0, to: 2 })).toBeUndefined()
+  })
+
+  it("reverse=true with custom from/to and key as function", () => {
+    const arr = [{ v: 0 }, { v: 2 }, { v: 0 }, { v: 3 }]
+    expect(findTruthy(arr, { key: (e) => e.v, reverse: true, from: 2, to: 1 })).toEqual({
+      v: 2,
+    })
+    expect(findTruthy(arr, { key: (e) => e.v, reverse: true, from: 1, to: 1 })).toEqual({
+      v: 2,
+    })
+    expect(findTruthy(arr, { key: (e) => e.v, reverse: true, from: 1, to: 2 })).toBeUndefined()
+  })
+
+  it("reverse=true with custom from/to and key as string", () => {
+    const arr = [{ x: 0 }, { x: 2 }, { x: 0 }]
+    expect(findTruthy(arr, { key: "x", reverse: true, from: 1, to: 1 })).toEqual({ x: 2 })
+    expect(findTruthy(arr, { key: "x", reverse: true, from: 1, to: 2 })).toBeUndefined()
+  })
+
+  it("reverse=true with custom from/to and key as number", () => {
+    const arr = [[0], [2], [0]]
+    expect(findTruthy(arr, { key: 0, reverse: true, from: 1, to: 1 })).toEqual([2])
+    expect(findTruthy(arr, { key: 0, reverse: true, from: 1, to: 2 })).toBeUndefined()
+  })
 })
