@@ -1,5 +1,7 @@
 import { describe, expect, it } from "@jest/globals"
-const { mod, formatPlus, line, sum, average, variance, range } = await import("./math.js")
+const { mod, formatPlus, line, sum, average, variance, range, isNumber } = await import(
+  "./math.js"
+)
 
 describe("mod", () => {
   it("returns n when n is less than m and n is non-negative", () => {
@@ -297,5 +299,36 @@ describe("range", () => {
 
   it("handles floating point increments", () => {
     expect(range(0, 1, 0.25)).toEqual([0, 0.25, 0.5, 0.75])
+  })
+})
+
+describe("isNumber", () => {
+  it("returns true for finite numbers", () => {
+    expect(isNumber(0)).toBe(true)
+    expect(isNumber(42)).toBe(true)
+    expect(isNumber(-3.14)).toBe(true)
+    expect(isNumber(Number.MAX_SAFE_INTEGER)).toBe(true)
+    expect(isNumber(Number.MIN_SAFE_INTEGER)).toBe(true)
+  })
+
+  it("returns true for Infinity and -Infinity", () => {
+    expect(isNumber(Infinity)).toBe(true)
+    expect(isNumber(-Infinity)).toBe(true)
+  })
+
+  it("returns false for NaN", () => {
+    expect(isNumber(NaN)).toBe(false)
+  })
+
+  it("returns false for non-number types", () => {
+    expect(isNumber("123")).toBe(false)
+    expect(isNumber(undefined)).toBe(false)
+    // eslint-disable-next-line no-restricted-syntax
+    expect(isNumber(null)).toBe(false)
+    expect(isNumber({})).toBe(false)
+    expect(isNumber([])).toBe(false)
+    expect(isNumber(true)).toBe(false)
+    expect(isNumber(Symbol("x"))).toBe(false)
+    expect(isNumber(() => 1)).toBe(false)
   })
 })

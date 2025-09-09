@@ -141,3 +141,12 @@ export function range(start, end, increment = 1) {
   }
   return results
 }
+
+/**
+ * Check if the argument is a number (typeof is "number" and not NaN).
+ * @param {any} number
+ * @returns {boolean}
+ */
+export function isNumber(number) {
+  return typeof number === "number" && !isNaN(number)
+}
