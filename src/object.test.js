@@ -1,6 +1,13 @@
 /* eslint-disable no-restricted-syntax */
 import { jest } from "@jest/globals"
-import { deepMerge, deleteUndefinedValues, like, mutateValues, via } from "./object.js"
+import {
+  deepEqual,
+  deepMerge,
+  deleteUndefinedValues,
+  like,
+  mutateValues,
+  via,
+} from "./object.js"
 
 describe("mutateValues", () => {
   it("mutates values in the object using the callback", () => {
@@ -255,5 +262,108 @@ describe("deepMerge", () => {
     const target = { a: 1 }
     const result = deepMerge(target, { b: 2 })
     expect(result).toBe(target)
+  })
+})
+
+describe("deepEqual", () => {
+  it("returns true for strictly equal primitives", () => {
+    expect(deepEqual(1, 1)).toBe(true)
+    expect(deepEqual("foo", "foo")).toBe(true)
+    expect(deepEqual(true, true)).toBe(true)
+    expect(deepEqual(null, null)).toBe(true)
+    expect(deepEqual(undefined, undefined)).toBe(true)
+  })
+
+  it("returns false for different primitives", () => {
+    expect(deepEqual(1, 2)).toBe(false)
+    expect(deepEqual("foo", "bar")).toBe(false)
+    expect(deepEqual(true, false)).toBe(false)
+    expect(deepEqual(null, undefined)).toBe(false)
+  })
+
+  it("returns true for deeply equal objects", () => {
+    expect(deepEqual({ a: 1, b: 2 }, { a: 1, b: 2 })).toBe(true)
+    expect(deepEqual({ a: { b: 2 } }, { a: { b: 2 } })).toBe(true)
+    expect(deepEqual({}, {})).toBe(true)
+  })
+
+  it("returns false for objects with different keys or values", () => {
+    expect(deepEqual({ a: 1 }, { a: 2 })).toBe(false)
+    expect(deepEqual({ a: 1 }, { b: 1 })).toBe(false)
+    expect(deepEqual({ a: 1 }, {})).toBe(false)
+    expect(deepEqual({}, { a: 1 })).toBe(false)
+  })
+
+  it("returns true for deeply equal arrays", () => {
+    expect(deepEqual([1, 2, 3], [1, 2, 3])).toBe(true)
+    expect(deepEqual([], [])).toBe(true)
+    expect(deepEqual([[1], [2]], [[1], [2]])).toBe(true)
+  })
+
+  it("returns false for arrays with different elements or lengths", () => {
+    expect(deepEqual([1, 2], [1, 2, 3])).toBe(false)
+    expect(deepEqual([1, 2, 3], [1, 2])).toBe(false)
+    expect(deepEqual([1, 2, 3], [3, 2, 1])).toBe(false)
+  })
+
+  it("returns true if one is array and one is object", () => {
+    expect(deepEqual([1, 2], { 0: 1, 1: 2 })).toBe(true)
+    expect(deepEqual({ 0: 1, 1: 2 }, [1, 2])).toBe(true)
+  })
+
+  it("returns true for objects with same keys in different order", () => {
+    expect(deepEqual({ a: 1, b: 2 }, { b: 2, a: 1 })).toBe(true)
+  })
+
+  it("returns true for nested objects and arrays", () => {
+    const a = { foo: [1, { bar: 2 }], baz: { qux: [3] } }
+    const b = { foo: [1, { bar: 2 }], baz: { qux: [3] } }
+    expect(deepEqual(a, b)).toBe(true)
+  })
+
+  it("returns false for nested difference", () => {
+    const a = { foo: [1, { bar: 2 }], baz: { qux: [3] } }
+    const b = { foo: [1, { bar: 3 }], baz: { qux: [3] } }
+    expect(deepEqual(a, b)).toBe(false)
+  })
+
+  it("returns false if keys differ in nested objects", () => {
+    expect(deepEqual({ a: { b: 1 } }, { a: { c: 1 } })).toBe(false)
+  })
+
+  it("returns false if one is null or undefined and the other is object", () => {
+    expect(deepEqual(null, {})).toBe(false)
+    expect(deepEqual({}, null)).toBe(false)
+    expect(deepEqual(undefined, {})).toBe(false)
+    expect(deepEqual({}, undefined)).toBe(false)
+  })
+
+  it("returns true for self-references (same object)", () => {
+    const obj = { a: 1 }
+    expect(deepEqual(obj, obj)).toBe(true)
+    const arr = [1, 2]
+    expect(deepEqual(arr, arr)).toBe(true)
+  })
+
+  it("returns false for objects with different number of keys", () => {
+    expect(deepEqual({ a: 1, b: 2 }, { a: 1 })).toBe(false)
+    expect(deepEqual({ a: 1 }, { a: 1, b: 2 })).toBe(false)
+  })
+
+  it("returns true if object keys match but values are objects of different types", () => {
+    expect(deepEqual({ a: [1, 2] }, { a: { 0: 1, 1: 2 } })).toBe(true)
+  })
+
+  it("returns false for objects with missing keys", () => {
+    expect(deepEqual({ a: 1, b: 2 }, { a: 1 })).toBe(false)
+  })
+
+  it("returns true for objects with undefined values if both have them", () => {
+    expect(deepEqual({ a: undefined }, { a: undefined })).toBe(true)
+  })
+
+  it("returns false if one object has undefined key and the other doesn't", () => {
+    expect(deepEqual({ a: undefined }, {})).toBe(false)
+    expect(deepEqual({}, { a: undefined })).toBe(false)
   })
 })
