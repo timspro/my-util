@@ -5,7 +5,7 @@ export function findClosestAbs(array, desired, { key, cutoff = Infinity } = {}) 
       const element = array[i]
       const value = key(element, i, array)
       const diff = Math.abs(value - desired)
-      if (diff < cutoff) {
+      if (diff < cutoff || (diff === cutoff && !closest)) {
         closest = element
         cutoff = diff
       }
@@ -14,7 +14,7 @@ export function findClosestAbs(array, desired, { key, cutoff = Infinity } = {}) 
     for (const element of array) {
       const value = element[key]
       const diff = Math.abs(value - desired)
-      if (diff < cutoff) {
+      if (diff < cutoff || (diff === cutoff && !closest)) {
         closest = element
         cutoff = diff
       }
@@ -22,7 +22,7 @@ export function findClosestAbs(array, desired, { key, cutoff = Infinity } = {}) 
   } else {
     for (const value of array) {
       const diff = Math.abs(value - desired)
-      if (diff < cutoff) {
+      if (diff < cutoff || (diff === cutoff && !closest)) {
         closest = value
         cutoff = diff
       }
@@ -37,7 +37,7 @@ export function findClosestLT(array, desired, { key, cutoff = -Infinity } = {}) 
     for (let i = 0; i < array.length; i++) {
       const element = array[i]
       const value = key(element, i, array)
-      if (value < desired && value > cutoff) {
+      if (value < desired && (value > cutoff || (value === cutoff && !closest))) {
         closest = element
         cutoff = value
       }
@@ -45,14 +45,14 @@ export function findClosestLT(array, desired, { key, cutoff = -Infinity } = {}) 
   } else if (typeof key === "number" || typeof key === "string") {
     for (const element of array) {
       const value = element[key]
-      if (value < desired && value > cutoff) {
+      if (value < desired && (value > cutoff || (value === cutoff && !closest))) {
         closest = element
         cutoff = value
       }
     }
   } else {
     for (const value of array) {
-      if (value < desired && value > cutoff) {
+      if (value < desired && (value > cutoff || (value === cutoff && !closest))) {
         closest = value
         cutoff = value
       }
@@ -67,7 +67,7 @@ export function findClosestLTE(array, desired, { key, cutoff = -Infinity } = {})
     for (let i = 0; i < array.length; i++) {
       const element = array[i]
       const value = key(element, i, array)
-      if (value <= desired && value > cutoff) {
+      if (value <= desired && (value > cutoff || (value === cutoff && !closest))) {
         closest = element
         cutoff = value
       }
@@ -75,14 +75,14 @@ export function findClosestLTE(array, desired, { key, cutoff = -Infinity } = {})
   } else if (typeof key === "number" || typeof key === "string") {
     for (const element of array) {
       const value = element[key]
-      if (value <= desired && value > cutoff) {
+      if (value <= desired && (value > cutoff || (value === cutoff && !closest))) {
         closest = element
         cutoff = value
       }
     }
   } else {
     for (const value of array) {
-      if (value <= desired && value > cutoff) {
+      if (value <= desired && (value > cutoff || (value === cutoff && !closest))) {
         closest = value
         cutoff = value
       }
@@ -97,7 +97,7 @@ export function findClosestGT(array, desired, { key, cutoff = Infinity } = {}) {
     for (let i = 0; i < array.length; i++) {
       const element = array[i]
       const value = key(element, i, array)
-      if (value > desired && value < cutoff) {
+      if (value > desired && (value < cutoff || (value === cutoff && !closest))) {
         closest = element
         cutoff = value
       }
@@ -105,14 +105,14 @@ export function findClosestGT(array, desired, { key, cutoff = Infinity } = {}) {
   } else if (typeof key === "number" || typeof key === "string") {
     for (const element of array) {
       const value = element[key]
-      if (value > desired && value < cutoff) {
+      if (value > desired && (value < cutoff || (value === cutoff && !closest))) {
         closest = element
         cutoff = value
       }
     }
   } else {
     for (const value of array) {
-      if (value > desired && value < cutoff) {
+      if (value > desired && (value < cutoff || (value === cutoff && !closest))) {
         closest = value
         cutoff = value
       }
@@ -127,7 +127,7 @@ export function findClosestGTE(array, desired, { key, cutoff = Infinity } = {}) 
     for (let i = 0; i < array.length; i++) {
       const element = array[i]
       const value = key(element, i, array)
-      if (value >= desired && value < cutoff) {
+      if (value >= desired && (value < cutoff || (value === cutoff && !closest))) {
         closest = element
         cutoff = value
       }
@@ -135,14 +135,14 @@ export function findClosestGTE(array, desired, { key, cutoff = Infinity } = {}) 
   } else if (typeof key === "number" || typeof key === "string") {
     for (const element of array) {
       const value = element[key]
-      if (value >= desired && value < cutoff) {
+      if (value >= desired && (value < cutoff || (value === cutoff && !closest))) {
         closest = element
         cutoff = value
       }
     }
   } else {
     for (const value of array) {
-      if (value >= desired && value < cutoff) {
+      if (value >= desired && (value < cutoff || (value === cutoff && !closest))) {
         closest = value
         cutoff = value
       }
@@ -165,7 +165,7 @@ export function findClosestGTE(array, desired, { key, cutoff = Infinity } = {}) 
  *  If a function, called with the element, index and array (same as .map() callback) to produce the value to sort on.
  * @param {string=} options.comparator "abs", "lt", "lte", "gt", "gte", "abs". Default is "abs" which implies T is number.
  * @param {V=} options.cutoff If specified, sets a initial constraint on how close the found value must be.
- *  For example, if used with "lt", the found element would need to be greater than the cutoff but still less than the desired value.
+ *  For example, if used with "lt", the found element would need to be greater than or equal to the cutoff but still less than the desired value.
  *  If used with "abs", the found element would need to have a difference with the desired value less than the cutoff.
  * @returns {T|undefined}
  */

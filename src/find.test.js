@@ -45,7 +45,8 @@ describe("findClosestAbs", () => {
 
   it("respects cutoff", () => {
     expect(findClosestAbs([1, 5, 9], 6, { cutoff: 2 })).toBe(5)
-    expect(findClosestAbs([1, 5, 9], 6, { cutoff: 1 })).toBeUndefined()
+    expect(findClosestAbs([1, 5, 9], 6, { cutoff: 1 })).toBe(5)
+    expect(findClosestAbs([1, 5, 9], 6, { cutoff: 0 })).toBeUndefined()
   })
 })
 
@@ -81,7 +82,8 @@ describe("findClosestLT", () => {
 
   it("respects cutoff", () => {
     expect(findClosestLT([1, 5, 9], 6, { cutoff: 4 })).toBe(5)
-    expect(findClosestLT([1, 5, 9], 6, { cutoff: 5 })).toBeUndefined()
+    expect(findClosestLT([1, 5, 9], 6, { cutoff: 5 })).toBe(5)
+    expect(findClosestLT([1, 5, 9], 6, { cutoff: 6 })).toBe(undefined)
   })
 })
 
@@ -118,7 +120,8 @@ describe("findClosestLTE", () => {
 
   it("respects cutoff", () => {
     expect(findClosestLTE([1, 5, 9], 6, { cutoff: 4 })).toBe(5)
-    expect(findClosestLTE([1, 5, 9], 6, { cutoff: 5 })).toBeUndefined()
+    expect(findClosestLTE([1, 5, 9], 6, { cutoff: 5 })).toBe(5)
+    expect(findClosestLTE([1, 5, 9], 6, { cutoff: 6 })).toBe(undefined)
   })
 })
 
@@ -153,8 +156,9 @@ describe("findClosestGT", () => {
   })
 
   it("respects cutoff", () => {
-    expect(findClosestGT([1, 5, 9], 6, { cutoff: 8 })).toBeUndefined()
-    expect(findClosestGT([1, 5, 9], 4, { cutoff: 8 })).toBe(5)
+    expect(findClosestGTE([1, 5, 9], 6, { cutoff: 10 })).toBe(9)
+    expect(findClosestGTE([1, 5, 9], 6, { cutoff: 9 })).toBe(9)
+    expect(findClosestGTE([1, 5, 9], 6, { cutoff: 8 })).toBeUndefined()
   })
 })
 
@@ -189,8 +193,9 @@ describe("findClosestGTE", () => {
   })
 
   it("respects cutoff", () => {
+    expect(findClosestGTE([1, 5, 9], 6, { cutoff: 10 })).toBe(9)
+    expect(findClosestGTE([1, 5, 9], 6, { cutoff: 9 })).toBe(9)
     expect(findClosestGTE([1, 5, 9], 6, { cutoff: 8 })).toBeUndefined()
-    expect(findClosestGTE([1, 5, 9], 4, { cutoff: 8 })).toBe(5)
   })
 })
 
