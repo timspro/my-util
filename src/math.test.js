@@ -311,9 +311,9 @@ describe("isNumber", () => {
     expect(isNumber(Number.MIN_SAFE_INTEGER)).toBe(true)
   })
 
-  it("returns true for Infinity and -Infinity", () => {
-    expect(isNumber(Infinity)).toBe(true)
-    expect(isNumber(-Infinity)).toBe(true)
+  it("returns false for Infinity and -Infinity", () => {
+    expect(isNumber(Infinity)).toBe(false)
+    expect(isNumber(-Infinity)).toBe(false)
   })
 
   it("returns false for NaN", () => {

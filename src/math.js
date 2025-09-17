@@ -148,5 +148,5 @@ export function range(start, end, increment = 1) {
  * @returns {boolean}
  */
 export function isNumber(number) {
-  return typeof number === "number" && !isNaN(number)
+  return Number.isFinite(number)
 }
