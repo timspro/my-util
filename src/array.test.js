@@ -1,7 +1,9 @@
 /* eslint-disable no-restricted-syntax */
 import { describe, expect, it, jest } from "@jest/globals"
 
-const { chunk, unique, ascending, descending, multilevel } = await import("./array.js")
+const { chunk, unique, duplicates, ascending, descending, multilevel } = await import(
+  "./array.js"
+)
 
 describe("chunk", () => {
   it("splits array into chunks of specified size", () => {
@@ -159,6 +161,169 @@ describe("unique", () => {
     const b = { x: 2 }
     expect(unique([a, b, a], {})).toEqual([a, b])
     expect(unique([a, b, a], { key: undefined })).toEqual([a, b])
+  })
+})
+
+describe("duplicates", () => {
+  it("returns empty array if there are no duplicates", () => {
+    expect(duplicates([1, 2, 3])).toEqual([])
+    expect(duplicates([], {})).toEqual([])
+  })
+
+  it("returns groups of duplicate primitives", () => {
+    expect(duplicates([1, 2, 1, 3, 2, 1])).toEqual([
+      [1, 1, 1],
+      [2, 2],
+    ])
+    expect(duplicates(["a", "b", "a", "c", "b"])).toEqual([
+      ["a", "a"],
+      ["b", "b"],
+    ])
+  })
+
+  it("returns groups of duplicate objects by reference", () => {
+    const a = {}
+    const b = {}
+    expect(duplicates([a, b, a, b, a])).toEqual([
+      [a, a, a],
+      [b, b],
+    ])
+  })
+
+  it("returns groups of duplicates by key (string)", () => {
+    const arr = [
+      { id: 1, name: "a" },
+      { id: 2, name: "b" },
+      { id: 1, name: "c" },
+      { id: 3, name: "d" },
+      { id: 2, name: "e" },
+      { id: 1, name: "f" },
+    ]
+    expect(duplicates(arr, { key: "id" })).toEqual([
+      [
+        { id: 1, name: "a" },
+        { id: 1, name: "c" },
+        { id: 1, name: "f" },
+      ],
+      [
+        { id: 2, name: "b" },
+        { id: 2, name: "e" },
+      ],
+    ])
+  })
+
+  it("returns groups of duplicates by key (number)", () => {
+    const arr = [
+      { 0: "a", v: 1 },
+      { 0: "b", v: 2 },
+      { 0: "a", v: 3 },
+      { 0: "c", v: 4 },
+      { 0: "b", v: 5 },
+    ]
+    expect(duplicates(arr, { key: 0 })).toEqual([
+      [
+        { 0: "a", v: 1 },
+        { 0: "a", v: 3 },
+      ],
+      [
+        { 0: "b", v: 2 },
+        { 0: "b", v: 5 },
+      ],
+    ])
+  })
+
+  it("returns groups of duplicates by function", () => {
+    const arr = [
+      { id: 1, name: "a" },
+      { id: 2, name: "b" },
+      { id: 1, name: "c" },
+      { id: 3, name: "d" },
+      { id: 2, name: "e" },
+      { id: 1, name: "f" },
+    ]
+    expect(
+      duplicates(arr, {
+        key: (el) => el.id % 2, // group by odd/even id
+      })
+    ).toEqual([
+      [
+        { id: 1, name: "a" },
+        { id: 1, name: "c" },
+        { id: 3, name: "d" },
+        { id: 1, name: "f" },
+      ],
+      [
+        { id: 2, name: "b" },
+        { id: 2, name: "e" },
+      ],
+    ])
+  })
+
+  it("returns groups of duplicates by function using index and array", () => {
+    const arr = ["a", "b", "c", "a", "c"]
+    expect(
+      duplicates(arr, {
+        key: (el, i, array) => array.indexOf(el), // group by first occurrence index
+      })
+    ).toEqual([
+      ["a", "a"],
+      ["c", "c"],
+    ])
+  })
+
+  it("returns groups of duplicates by key when some elements lack the key", () => {
+    const arr = [{ id: 1 }, {}, { id: 1 }, { id: 2 }, {}, { id: 2 }]
+    expect(duplicates(arr, { key: "id" })).toEqual([
+      [{ id: 1 }, { id: 1 }],
+      [{}, {}],
+      [{ id: 2 }, { id: 2 }],
+    ])
+  })
+
+  it("returns groups of duplicates by function when function returns undefined/null", () => {
+    const arr = [{ id: 1 }, {}, { id: 2 }, { id: null }, {}, { id: null }]
+    expect(
+      duplicates(arr, {
+        key: (el) => el.id,
+      })
+    ).toEqual([
+      [{}, {}],
+      [{ id: null }, { id: null }],
+    ])
+  })
+
+  it("returns groups of duplicates by key when key value is undefined/null", () => {
+    const arr = [
+      { id: 1 },
+      { id: undefined },
+      { id: 2 },
+      { id: null },
+      { id: undefined },
+      { id: null },
+    ]
+    expect(duplicates(arr, { key: "id" })).toEqual([
+      [{ id: undefined }, { id: undefined }],
+      [{ id: null }, { id: null }],
+    ])
+  })
+
+  it("returns empty array if all elements are unique by key or function", () => {
+    const arr = [{ id: 1 }, { id: 2 }, { id: 3 }]
+    expect(duplicates(arr, { key: "id" })).toEqual([])
+    expect(
+      duplicates(arr, {
+        key: (el) => el.id,
+      })
+    ).toEqual([])
+  })
+
+  it("returns empty array for empty input with key or function", () => {
+    expect(duplicates([], { key: "id" })).toEqual([])
+    expect(
+      duplicates([], {
+        key: (el) => el,
+      })
+    ).toEqual([])
   })
 })
 

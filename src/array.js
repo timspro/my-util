@@ -54,6 +54,50 @@ export function unique(array, { key } = {}) {
   return result
 }
 
+/**
+ * Returns groups of duplicate elements in an array.
+ * Each group is an array of elements that share the same key or callback result.
+ * Only groups with more than one element are returned. Returns an empty array if no duplicates.
+ * @param {Array} array
+ * @param {Object} $1
+ * @param {string|number|Function=} $1.key
+ *  If a function, calls the provided function on an element to get the value for grouping.
+ *  If a string or number, uses element[key].
+ *  If omitted, compares elements directly.
+ * @returns {Array<Array>}
+ */
+export function duplicates(array, { key } = {}) {
+  const groups = new Map()
+
+  if (typeof key === "function") {
+    for (let i = 0; i < array.length; i++) {
+      const element = array[i]
+      const value = key(element, i, array)
+      if (!groups.has(value)) {
+        groups.set(value, [])
+      }
+      groups.get(value).push(element)
+    }
+  } else if (typeof key === "string" || typeof key === "number") {
+    for (const element of array) {
+      const value = element[key]
+      if (!groups.has(value)) {
+        groups.set(value, [])
+      }
+      groups.get(value).push(element)
+    }
+  } else {
+    for (const element of array) {
+      if (!groups.has(element)) {
+        groups.set(element, [])
+      }
+      groups.get(element).push(element)
+    }
+  }
+  const results = [...groups.values()].filter((group) => group.length > 1)
+  return results
+}
+
 // sorts undefined and null to the end if applicable
 function compareUndefinedNull(a, b) {
   if (b === undefined || b === null) {
