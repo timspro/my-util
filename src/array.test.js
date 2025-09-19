@@ -68,6 +68,98 @@ describe("unique", () => {
     const b = {}
     expect(unique([a, b, a])).toEqual([a, b])
   })
+
+  it("returns unique elements by key (string)", () => {
+    const arr = [
+      { id: 1, name: "a" },
+      { id: 2, name: "b" },
+      { id: 1, name: "c" },
+      { id: 3, name: "d" },
+      { id: 2, name: "e" },
+    ]
+    expect(unique(arr, { key: "id" })).toEqual([
+      { id: 1, name: "a" },
+      { id: 2, name: "b" },
+      { id: 3, name: "d" },
+    ])
+  })
+
+  it("returns unique elements by key (number)", () => {
+    const arr = [
+      { 0: "a", v: 1 },
+      { 0: "b", v: 2 },
+      { 0: "a", v: 3 },
+      { 0: "c", v: 4 },
+    ]
+    expect(unique(arr, { key: 0 })).toEqual([
+      { 0: "a", v: 1 },
+      { 0: "b", v: 2 },
+      { 0: "c", v: 4 },
+    ])
+  })
+
+  it("returns unique elements by function", () => {
+    const arr = [
+      { id: 1, name: "a" },
+      { id: 2, name: "b" },
+      { id: 1, name: "c" },
+      { id: 3, name: "d" },
+      { id: 2, name: "e" },
+    ]
+    expect(
+      unique(arr, {
+        key: (el) => el.id % 2, // group by odd/even id
+      })
+    ).toEqual([
+      { id: 1, name: "a" }, // id % 2 === 1
+      { id: 2, name: "b" }, // id % 2 === 0
+    ])
+  })
+
+  it("returns unique elements by function using index and array", () => {
+    const arr = ["a", "b", "c", "a"]
+    expect(
+      unique(arr, {
+        key: (el, i, array) => array.indexOf(el), // only first occurrence is unique
+      })
+    ).toEqual(["a", "b", "c"])
+  })
+
+  it("returns unique elements by key when some elements lack the key", () => {
+    const arr = [{ id: 1 }, {}, { id: 1 }, { id: 2 }, {}]
+    expect(unique(arr, { key: "id" })).toEqual([{ id: 1 }, {}, { id: 2 }])
+  })
+
+  it("returns unique elements by function when function returns undefined/null", () => {
+    const arr = [{ id: 1 }, {}, { id: 2 }, { id: null }, {}]
+    expect(
+      unique(arr, {
+        key: (el) => el.id,
+      })
+    ).toEqual([{ id: 1 }, {}, { id: 2 }, { id: null }])
+  })
+
+  it("returns unique elements by key when key value is undefined/null", () => {
+    const arr = [{ id: 1 }, { id: undefined }, { id: 2 }, { id: null }, { id: undefined }]
+    expect(unique(arr, { key: "id" })).toEqual([
+      { id: 1 },
+      { id: undefined },
+      { id: 2 },
+      { id: null },
+    ])
+  })
+
+  it("returns unique elements for primitive array if key is not provided", () => {
+    expect(unique([1, 2, 2, 3], {})).toEqual([1, 2, 3])
+    expect(unique([1, 2, 2, 3], { key: undefined })).toEqual([1, 2, 3])
+  })
+
+  it("returns unique elements for object array if key is not provided", () => {
+    const a = { x: 1 }
+    const b = { x: 2 }
+    expect(unique([a, b, a], {})).toEqual([a, b])
+    expect(unique([a, b, a], { key: undefined })).toEqual([a, b])
+  })
 })
 
 describe("ascending", () => {

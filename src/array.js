@@ -20,12 +20,38 @@ export function chunk(array, chunkSize = array.length) {
 }
 
 /**
- * Shorthand for returning all unique elements in an array.
+ * Returns all unique elements in an array, or alternatively by checking a key's value or function's result.
  * @param {Array} array
+ * @param {Object} $1
+ * @param {string|number|Function=} $1.key
+ *  If a function, calls the provided function on an element to get the value to check for uniqueness.
+ *  If a string or number, checks each element's value at key for uniqueness.
  * @returns {Array}
  */
-export function unique(array) {
-  return [...new Set(array)]
+export function unique(array, { key } = {}) {
+  const seen = new Set()
+  const result = []
+  if (typeof key === "function") {
+    for (let i = 0; i < array.length; i++) {
+      const element = array[i]
+      const value = key(element, i, array)
+      if (!seen.has(value)) {
+        seen.add(value)
+        result.push(element)
+      }
+    }
+  } else if (typeof key === "string" || typeof key === "number") {
+    for (const element of array) {
+      const value = element[key]
+      if (!seen.has(value)) {
+        seen.add(value)
+        result.push(element)
+      }
+    }
+  } else {
+    return [...new Set(array)]
+  }
+  return result
 }
 
 // sorts undefined and null to the end if applicable
