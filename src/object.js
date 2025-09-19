@@ -135,16 +135,14 @@ export function deepMerge(target, ...sources) {
 }
 
 /**
- * Produces a deep merge of a deep copy of each source object. See deepCopy() and deepMerge() documentation for caveats.
+ * Merges a deep copy of each source object into target. See deepCopy() and deepMerge() documentation for caveats.
+ * @param {Object} target The target object that will receive the merged properties.
  * @param {...Object} sources The source objects whose properties will be merged into the returned object
  * @returns {Object}
  */
-export function deepMergeCopy(...sources) {
-  if (!sources.length) {
-    return {}
-  }
+export function deepMergeCopy(target, ...sources) {
   const copies = sources.map(deepCopy)
-  const result = deepMerge(...copies)
+  const result = deepMerge(target, ...copies)
   return result
 }
 

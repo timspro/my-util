@@ -423,35 +423,70 @@ describe("deepMerge", () => {
 
 // --- deepMergeCopy ---
 describe("deepMergeCopy", () => {
-  it("deeply merges deep copies of sources", () => {
-    const s1 = { a: { b: 1 } }
-    const s2 = { a: { c: 2 } }
-    const merged = deepMergeCopy(s1, s2)
-    expect(merged).toEqual({ a: { b: 1, c: 2 } })
-    expect(merged).not.toBe(s1)
-    expect(merged).not.toBe(s2)
+  it("deeply merges deep copies of sources into the target", () => {
+    const target = { a: { b: 1 } }
+    const s1 = { a: { c: 2 } }
+    const s2 = { a: { d: 3 } }
+    const origTarget = JSON.stringify(target)
+    const merged = deepMergeCopy(target, s1, s2)
+    expect(merged).toEqual({ a: { b: 1, c: 2, d: 3 } })
+    expect(merged).toBe(target)
     expect(merged.a).not.toBe(s1.a)
     expect(merged.a).not.toBe(s2.a)
+    expect(JSON.stringify(target)).not.toBe(origTarget)
+    expect(s1).toEqual({ a: { c: 2 } })
+    expect(s2).toEqual({ a: { d: 3 } })
   })
 
   it("does not mutate source objects", () => {
-    const s1 = { a: 1 }
-    const s2 = { b: 2 }
+    const target = { a: 1 }
+    const s1 = { b: 2 }
+    const s2 = { c: 3 }
     const orig1 = JSON.stringify(s1)
     const orig2 = JSON.stringify(s2)
-    deepMergeCopy(s1, s2)
+    deepMergeCopy(target, s1, s2)
     expect(JSON.stringify(s1)).toBe(orig1)
     expect(JSON.stringify(s2)).toBe(orig2)
   })
 
-  it("handles arrays and primitives", () => {
-    const s1 = { a: [1, 2] }
-    const s2 = { a: [3, 4], b: 5 }
-    expect(deepMergeCopy(s1, s2)).toEqual({ a: [3, 4], b: 5 })
+  it("handles arrays and primitives in sources", () => {
+    const target = { a: [1, 2] }
+    const s1 = { a: [3, 4], b: 5 }
+    expect(deepMergeCopy(target, s1)).toEqual({ a: [3, 4], b: 5 })
   })
 
-  it("returns {} if called with no sources", () => {
-    expect(deepMergeCopy()).toEqual({})
+  it("returns the target object", () => {
+    const target = { x: 1 }
+    const s1 = { y: 2 }
+    expect(deepMergeCopy(target, s1)).toBe(target)
+  })
+
+  it("merges nothing if no sources provided (returns target as is)", () => {
+    const target = { foo: 1 }
+    expect(deepMergeCopy(target)).toBe(target)
+    expect(target).toEqual({ foo: 1 })
+  })
+
+  it("returns target if called with no arguments", () => {
+    expect(deepMergeCopy({})).toEqual({})
+    expect(deepMergeCopy()).toEqual(undefined)
+  })
+
+  it("does not mutate the target if no sources are provided", () => {
+    const target = { z: 9 }
+    const result = deepMergeCopy(target)
+    expect(result).toBe(target)
+    expect(result).toEqual({ z: 9 })
+  })
+
+  it("does not merge inherited properties from sources", () => {
+    const target = {}
+    const proto = { x: 1 }
+    const s1 = Object.create(proto)
+    s1.a = 2
+    deepMergeCopy(target, s1)
+    expect(target).toEqual({ a: 2 })
+    expect("x" in target).toBe(false)
   })
 })
 
