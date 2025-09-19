@@ -1,4 +1,28 @@
 /**
+ * Returns if the argument is an object.
+ * @param {any} thing
+ * @returns {boolean}
+ */
+export function isObject(thing) {
+  return typeof thing === "object" && thing !== null
+}
+
+/**
+ * Creates a new object with values created by calling callback on each of argument's values.
+ * @param {Object} object
+ * @param {Function} callback (value, key, object) => newValue // note if not changing value, should return value
+ * @returns {Object}
+ */
+export function mapValues(object, callback) {
+  const result = {}
+  const keys = Object.keys(object)
+  for (const key of keys) {
+    result[key] = callback(object[key], key, object)
+  }
+  return result
+}
+
+/**
  * Mutates the passed in object by calling callback on each of its values.
  * @param {Object} object
  * @param {Function} callback (value, key, object) => newValue // note if not changing value, should return value
@@ -57,9 +81,30 @@ export function like(template) {
 }
 
 /**
+ * Copies the source recursively.
+ * Does not preserve constructors of source or constructors of its keys' values.
+ * @template T
+ * @param {T} source
+ * @returns {T}
+ */
+export function deepCopy(source) {
+  if (Array.isArray(source)) {
+    return source.map(deepCopy)
+  }
+  if (isObject(source)) {
+    return mapValues(source, deepCopy)
+  }
+  // primitive or function
+  return source
+}
+
+/**
  * Deeply merges one or more source objects into a target object.
- * If the property values are objects, they are merged recursively.
- * Non-object properties (including arrays) are directly assigned to the target.
+ * Specifically:
+ *  If the target object has the key and the target's key's value is an non-array object AND
+ *    the source object's value is a non-array object, recursively merges the source into the target.
+ *  Otherwise, assigns source's key's value into the target's key.
+ * This means that arrays are never merged into arrays or other objects.
  * @param {Object} target The target object that will receive the merged properties.
  * @param {...Object} sources The source objects whose properties will be merged into the target.
  * @returns {Object} The target object with the merged properties from all source objects.
@@ -76,10 +121,9 @@ export function deepMerge(target, ...sources) {
       if (Array.isArray(sourceValue)) {
         target[key] = sourceValue
       } else if (
-        targetValue &&
-        typeof targetValue === "object" &&
-        sourceValue &&
-        typeof sourceValue === "object"
+        isObject(targetValue) &&
+        isObject(sourceValue) &&
+        !Array.isArray(targetValue)
       ) {
         deepMerge(targetValue, sourceValue)
       } else {
@@ -88,6 +132,20 @@ export function deepMerge(target, ...sources) {
     }
   }
   return target
+}
+
+/**
+ * Produces a deep merge of a deep copy of each source object. See deepCopy() and deepMerge() documentation for caveats.
+ * @param {...Object} sources The source objects whose properties will be merged into the returned object
+ * @returns {Object}
+ */
+export function deepMergeCopy(...sources) {
+  if (!sources.length) {
+    return {}
+  }
+  const copies = sources.map(deepCopy)
+  const result = deepMerge(...copies)
+  return result
 }
 
 /**
@@ -105,7 +163,7 @@ export function deepEqual(a, b) {
   if (a === b) {
     return true
   }
-  if (typeof a !== "object" || typeof b !== "object" || !a || !b) {
+  if (!isObject(a) || !isObject(b)) {
     return false
   }
   const keysA = Object.keys(a)

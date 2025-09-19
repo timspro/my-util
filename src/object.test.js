@@ -1,14 +1,89 @@
 /* eslint-disable no-restricted-syntax */
 import { jest } from "@jest/globals"
 import {
+  deepCopy,
   deepEqual,
   deepMerge,
+  deepMergeCopy,
   deleteUndefinedValues,
+  isObject,
   like,
+  mapValues,
   mutateValues,
   via,
 } from "./object.js"
 
+// --- isObject ---
+describe("isObject", () => {
+  it("returns true for plain objects", () => {
+    expect(isObject({})).toBe(true)
+    expect(isObject({ a: 1 })).toBe(true)
+  })
+
+  it("returns true for arrays", () => {
+    expect(isObject([])).toBe(true)
+    expect(isObject([1, 2])).toBe(true)
+  })
+
+  it("returns false for null", () => {
+    expect(isObject(null)).toBe(false)
+  })
+
+  it("returns false for primitives", () => {
+    expect(isObject(1)).toBe(false)
+    expect(isObject("str")).toBe(false)
+    expect(isObject(true)).toBe(false)
+    expect(isObject(undefined)).toBe(false)
+    expect(isObject(Symbol("blah"))).toBe(false)
+  })
+
+  it("returns false for functions", () => {
+    expect(isObject(() => {})).toBe(false)
+    // eslint-disable-next-line func-names, prefer-arrow-callback, no-empty-function
+    expect(isObject(function () {})).toBe(false)
+  })
+})
+
+// --- mapValues ---
+describe("mapValues", () => {
+  it("maps values in the object using the callback", () => {
+    const obj = { a: 1, b: 2 }
+    const result = mapValues(obj, (v) => v * 2)
+    expect(result).toEqual({ a: 2, b: 4 })
+    // original object is not mutated
+    expect(obj).toEqual({ a: 1, b: 2 })
+  })
+
+  it("callback receives value, key, and object", () => {
+    const obj = { x: 1 }
+    const cb = jest.fn((v) => v + 1)
+    mapValues(obj, cb)
+    expect(cb).toHaveBeenCalledWith(1, "x", obj)
+  })
+
+  it("returns a new object", () => {
+    const obj = { foo: "bar" }
+    const returned = mapValues(obj, (v) => v)
+    expect(returned).not.toBe(obj)
+    expect(returned).toEqual(obj)
+  })
+
+  it("handles empty object", () => {
+    const obj = {}
+    expect(mapValues(obj, (v) => v)).toEqual({})
+  })
+
+  it("does not map inherited enumerable properties", () => {
+    const proto = { inherited: 1 }
+    const obj = Object.create(proto)
+    obj.own = 2
+    const result = mapValues(obj, (v) => v + 1)
+    expect(result).toEqual({ own: 3 })
+    expect(result.inherited).toBeUndefined()
+  })
+})
+
+// --- mutateValues ---
 describe("mutateValues", () => {
   it("mutates values in the object using the callback", () => {
     const obj = { a: 1, b: 2 }
@@ -45,6 +120,7 @@ describe("mutateValues", () => {
   })
 })
 
+// --- deleteUndefinedValues ---
 describe("deleteUndefinedValues", () => {
   it("removes keys with undefined values", () => {
     const obj = { a: 1, b: undefined, c: 3 }
@@ -84,6 +160,7 @@ describe("deleteUndefinedValues", () => {
   })
 })
 
+// --- via ---
 describe("via", () => {
   it("returns a function that accesses the given key", () => {
     const getFoo = via("foo")
@@ -110,6 +187,7 @@ describe("via", () => {
   })
 })
 
+// --- like ---
 describe("contains", () => {
   it("returns true when object contains all template keys with same values", () => {
     const template = { a: 1, b: 2 }
@@ -167,6 +245,66 @@ describe("contains", () => {
   })
 })
 
+// --- deepCopy ---
+describe("deepCopy", () => {
+  it("copies primitives as is", () => {
+    expect(deepCopy(1)).toBe(1)
+    expect(deepCopy("str")).toBe("str")
+    expect(deepCopy(null)).toBe(null)
+    expect(deepCopy(undefined)).toBe(undefined)
+    const sym = Symbol("x")
+    expect(deepCopy(sym)).toBe(sym)
+  })
+
+  it("copies arrays recursively", () => {
+    const arr = [1, { a: 2 }, [3, 4]]
+    const copy = deepCopy(arr)
+    expect(copy).toEqual(arr)
+    expect(copy).not.toBe(arr)
+    expect(copy[1]).not.toBe(arr[1])
+    expect(copy[2]).not.toBe(arr[2])
+  })
+
+  it("copies objects recursively", () => {
+    const obj = { a: { b: 2 }, c: [1, 2] }
+    const copy = deepCopy(obj)
+    expect(copy).toEqual(obj)
+    expect(copy).not.toBe(obj)
+    expect(copy.a).not.toBe(obj.a)
+    expect(copy.c).not.toBe(obj.c)
+  })
+
+  it("does not preserve constructors", () => {
+    function Foo() {
+      this.x = 1
+    }
+    const foo = new Foo()
+    const copy = deepCopy(foo)
+    expect(copy).toEqual({ x: 1 })
+    // The constructor is not preserved
+    expect(copy instanceof Foo).toBe(false)
+  })
+
+  it("copies empty object/array", () => {
+    expect(deepCopy({})).toEqual({})
+    expect(deepCopy([])).toEqual([])
+  })
+
+  it("copies nested structures", () => {
+    const obj = { a: [{ b: 2 }, { c: [3] }] }
+    const copy = deepCopy(obj)
+    expect(copy).toEqual(obj)
+    expect(copy.a[0]).not.toBe(obj.a[0])
+    expect(copy.a[1].c).not.toBe(obj.a[1].c)
+  })
+
+  it("copies functions as is (does not clone)", () => {
+    const fn = () => 42
+    expect(deepCopy(fn)).toBe(fn)
+  })
+})
+
+// --- deepMerge ---
 describe("deepMerge", () => {
   it("merges flat objects", () => {
     const target = { a: 1, b: 2 }
@@ -263,8 +401,61 @@ describe("deepMerge", () => {
     const result = deepMerge(target, { b: 2 })
     expect(result).toBe(target)
   })
+
+  it("assigns object over array if source value is object and target value is array", () => {
+    const target = { a: [1, 2] }
+    const source = { a: { x: 3 } }
+    expect(deepMerge(target, source)).toEqual({ a: { x: 3 } })
+  })
+
+  it("assigns array over object if source value is array and target value is object", () => {
+    const target = { a: { x: 1 } }
+    const source = { a: [2, 3] }
+    expect(deepMerge(target, source)).toEqual({ a: [2, 3] })
+  })
+
+  it("recursively merges only non-array objects", () => {
+    const target = { a: { b: 1 }, arr: { x: 1 } }
+    const source = { a: { c: 2 }, arr: [1, 2] }
+    expect(deepMerge(target, source)).toEqual({ a: { b: 1, c: 2 }, arr: [1, 2] })
+  })
 })
 
+// --- deepMergeCopy ---
+describe("deepMergeCopy", () => {
+  it("deeply merges deep copies of sources", () => {
+    const s1 = { a: { b: 1 } }
+    const s2 = { a: { c: 2 } }
+    const merged = deepMergeCopy(s1, s2)
+    expect(merged).toEqual({ a: { b: 1, c: 2 } })
+    expect(merged).not.toBe(s1)
+    expect(merged).not.toBe(s2)
+    expect(merged.a).not.toBe(s1.a)
+    expect(merged.a).not.toBe(s2.a)
+  })
+
+  it("does not mutate source objects", () => {
+    const s1 = { a: 1 }
+    const s2 = { b: 2 }
+    const orig1 = JSON.stringify(s1)
+    const orig2 = JSON.stringify(s2)
+    deepMergeCopy(s1, s2)
+    expect(JSON.stringify(s1)).toBe(orig1)
+    expect(JSON.stringify(s2)).toBe(orig2)
+  })
+
+  it("handles arrays and primitives", () => {
+    const s1 = { a: [1, 2] }
+    const s2 = { a: [3, 4], b: 5 }
+    expect(deepMergeCopy(s1, s2)).toEqual({ a: [3, 4], b: 5 })
+  })
+
+  it("returns {} if called with no sources", () => {
+    expect(deepMergeCopy()).toEqual({})
+  })
+})
+
+// --- deepEqual ---
 describe("deepEqual", () => {
   it("returns true for strictly equal primitives", () => {
     expect(deepEqual(1, 1)).toBe(true)
