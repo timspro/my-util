@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-syntax */
 import { describe, expect, it, jest } from "@jest/globals"
 
-const { chunk, unique, duplicates, ascending, descending, multilevel } = await import(
+const { chunk, unique, duplicates, ascending, descending, multilevel, sortN } = await import(
   "./array.js"
 )
 
@@ -509,5 +509,43 @@ describe("multilevel", () => {
     const cmp = multilevel()
     expect(cmp(1, 2)).toBe(0)
     expect(cmp("a", "b")).toBe(0)
+  })
+})
+
+describe("sortN", () => {
+  it("returns empty array when N <= 0", () => {
+    expect(sortN([1, 2, 3], 0)).toEqual([])
+    expect(sortN([1, 2, 3], -5)).toEqual([])
+  })
+
+  it("returns the entire array sorted when N >= array.length and does not mutate original", () => {
+    const arr = [3, 1, 2]
+    const result = sortN(arr, 10)
+    expect(result).toEqual([1, 2, 3])
+    expect(arr).toEqual([3, 1, 2])
+    expect(result).not.toBe(arr)
+  })
+
+  it("returns the first N smallest elements (default ascending comparator)", () => {
+    expect(sortN([5, 1, 3, 2, 4], 3)).toEqual([1, 2, 3])
+    expect(sortN([3, 1, 3, 2, 2], 4)).toEqual([1, 2, 2, 3])
+  })
+
+  it("respects a descending comparator (returns top N largest)", () => {
+    const arr = [5, 1, 3, 2, 4]
+    expect(sortN(arr, 2, descending())).toEqual([5, 4])
+  })
+
+  it("works with key-based comparator and defers undefined/null values to the end", () => {
+    const arr = [{ v: 3 }, {}, { v: 1 }, { v: null }, { v: 2 }, { v: undefined }]
+    const out = sortN(arr, 3, ascending("v"))
+    expect(out.map((o) => o.v)).toEqual([1, 2, 3])
+  })
+
+  it("does not mutate the original array when N < array.length", () => {
+    const arr = [5, 1, 3, 2, 4]
+    const out = sortN(arr, 3)
+    expect(out).toEqual([1, 2, 3])
+    expect(arr).toEqual([5, 1, 3, 2, 4])
   })
 })

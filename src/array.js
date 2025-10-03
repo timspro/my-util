@@ -185,3 +185,65 @@ export function multilevel(...comparators) {
     return 0
   }
 }
+
+function siftDown(heap, i, compare) {
+  const n = heap.length
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const left = 2 * i + 1
+    const right = left + 1
+    let largest = i
+    if (left < n && compare(heap[left], heap[largest]) > 0) {
+      largest = left
+    }
+    if (right < n && compare(heap[right], heap[largest]) > 0) {
+      largest = right
+    }
+    if (largest === i) {
+      break
+    }
+    const swap = heap[largest]
+    heap[largest] = heap[i]
+    heap[i] = swap
+    i = largest
+  }
+}
+
+function maxHeapify(heap, compare) {
+  // (heap.length >>> 1) is equivalent to Math.floor(heap.length / 2)
+  // eslint-disable-next-line no-bitwise
+  for (let i = (heap.length >>> 1) - 1; i >= 0; i--) {
+    siftDown(heap, i, compare)
+  }
+}
+
+/**
+ * Get the first N elements of the sorted array efficiently.
+ * @template T
+ * @param {Array<T>} array
+ * @param {number} N
+ * @param {Function} compare
+ * @returns {Array<T>}
+ */
+export function sortN(array, N, compare = ascending()) {
+  if (N <= 0) {
+    return []
+  }
+  if (N >= array.length) {
+    return [...array].sort(compare)
+  }
+  if (array.length <= 100 && N / array.length >= 0.1) {
+    // seems to be faster to do it the "normal" way in this case
+    return [...array].sort(compare).slice(0, N)
+  }
+  const heap = array.slice(0, N)
+  maxHeapify(heap, compare)
+  for (let i = N; i < array.length; i++) {
+    const element = array[i]
+    if (compare(element, heap[0]) < 0) {
+      heap[0] = element
+      siftDown(heap, 0, compare)
+    }
+  }
+  return heap.sort(compare)
+}
