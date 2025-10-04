@@ -221,18 +221,23 @@ function maxHeapify(heap, compare) {
  * Get the first N elements of the sorted array efficiently.
  * @template T
  * @param {Array<T>} array
- * @param {number} N
- * @param {Function} compare
+ * @param {Object} $1
+ * @param {number} $1.N Number of elements to return
+ * @param {Function=} $1.compare Sort function. Default is ascending sort.
+ * @param {boolean=} $1.unsorted If true, returns the final result in heap order, not sorted order, as an optimization.
+ *  Default is false.
+ * @param {boolean=} $1.force If true, will force heap-based method for small N instead of more efficient "normal" way.
+ *  Default is false.
  * @returns {Array<T>}
  */
-export function sortN(array, N, compare = ascending()) {
-  if (N <= 0) {
+export function sortN(array, { N, compare = ascending(), unsorted = false, force = false }) {
+  if (!(N > 0)) {
     return []
   }
   if (N >= array.length) {
     return [...array].sort(compare)
   }
-  if (array.length <= 100 && N / array.length >= 0.1) {
+  if (!force && array.length <= 100 && N / array.length >= 0.1) {
     // seems to be faster to do it the "normal" way in this case
     return [...array].sort(compare).slice(0, N)
   }
@@ -244,6 +249,9 @@ export function sortN(array, N, compare = ascending()) {
       heap[0] = element
       siftDown(heap, 0, compare)
     }
+  }
+  if (unsorted) {
+    return heap
   }
   return heap.sort(compare)
 }
