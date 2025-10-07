@@ -130,7 +130,7 @@ export function formatPlus(number, { zero = false } = {}) {
  * Create an array of numbers progressing from start up to, but not including, end.
  * @param {number} start
  * @param {number=} end
- * @param {number=} step
+ * @param {number=} increment
  * @returns {number[]}
  */
 export function range(start, end, increment = 1) {
@@ -154,22 +154,31 @@ export function isNumber(number) {
 }
 
 /**
- * Returns an object mapping decile labels ("0", "10", ..., "100") to the corresponding element in the array at that percentile.
+ * Returns an object mapping quantile labels ("0", "10", ..., "100" for N = 10)
+ * to the corresponding element in the array at that percentile.
  * @template T
  * @param {T[]} array
+ * @param {number} N
  * @param {Object} $1
  * @param {string|number|Function=} $1.key Can specify a key of the object to sort on or a function.
  * @param {Function=} $1.method Method to use to choose which element when the percentile index is a fractional value.
  *  Default is Math.round.
- * @returns {Object}
+ * @returns {Object|undefined} Returns undefined is array is empty
  */
-export function deciles(array, { key, method = Math.round } = {}) {
+export function quantiles(array, N, { key, method = Math.round } = {}) {
+  if (!(N > 0) || N % 1 !== 0) {
+    throw new Error("N must be a positive integer")
+  }
+  if (!array.length) {
+    return undefined
+  }
   const sorted = [...array].sort(ascending(key))
   const result = {}
-  for (let i = 0; i <= 10; i++) {
-    const percentile = i / 10
+  for (let i = 0; i <= N; i++) {
+    const percentile = i / N
     const percentileIndex = method(percentile * (sorted.length - 1))
-    result[i * 10] = sorted[percentileIndex]
+    const label = method(i * (100 / N))
+    result[label] = sorted[percentileIndex]
   }
   return result
 }

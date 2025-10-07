@@ -1,6 +1,16 @@
 import { describe, expect, it } from "@jest/globals"
-// ISSUE: range JSDoc uses "step" but implementation uses "increment". These should be consistent.
-const { mod, formatPlus, line, sum, average, variance, range, isNumber, deciles } =
+
+// EXPORTED FUNCTIONS UNDER TEST:
+// - mod
+// - line
+// - sum
+// - average
+// - variance
+// - formatPlus
+// - range
+// - isNumber
+// - quantiles
+const { mod, formatPlus, line, sum, average, variance, range, isNumber, quantiles } =
   await import("./math.js")
 
 describe("mod", () => {
@@ -98,6 +108,7 @@ describe("line", () => {
     expect(f(1)).toBeNaN()
   })
 
+  // ISSUE: line() does not guard against identical points (x1===x2 and y1===y2), which yields NaN for all x. Consider throwing or documenting behavior for degenerate input.
   it("works with negative coordinates", () => {
     const f = line([-1, -2], [1, 2]) // slope 2
     expect(f(-1)).toBe(-2)
@@ -255,6 +266,8 @@ describe("formatPlus", () => {
     expect(formatPlus(Symbol("x"))).toBeUndefined()
     expect(formatPlus(NaN)).toBeUndefined()
   })
+
+  // ISSUE: formatPlus() treats any string not starting with "-" as positive, e.g. "+5" becomes "++5" and "abc" becomes "+abc". Consider handling leading "+" or non-numeric strings explicitly.
 })
 
 describe("range", () => {
@@ -331,10 +344,10 @@ describe("isNumber", () => {
   })
 })
 
-describe("deciles", () => {
+describe("quantiles", () => {
   it("maps 0..100 deciles for an already sorted array of length 11 (default rounding)", () => {
     const arr = Array.from({ length: 11 }, (_, i) => i)
-    const result = deciles(arr)
+    const result = quantiles(arr, 10)
     for (let i = 0; i <= 10; i++) {
       expect(result[i * 10]).toBe(i)
     }
@@ -342,7 +355,7 @@ describe("deciles", () => {
 
   it("sorts the input before selecting percentiles", () => {
     const arr = [9, 7, 5, 3, 1, 2, 4, 6, 8, 0, 10]
-    const result = deciles(arr)
+    const result = quantiles(arr, 10)
     for (let i = 0; i <= 10; i++) {
       expect(result[i * 10]).toBe(i)
     }
@@ -362,7 +375,7 @@ describe("deciles", () => {
       { v: 0 },
       { v: 10 },
     ]
-    const result = deciles(arr, { key: "v" })
+    const result = quantiles(arr, 10, { key: "v" })
     for (let i = 0; i <= 10; i++) {
       expect(result[i * 10].v).toBe(i)
     }
@@ -382,25 +395,64 @@ describe("deciles", () => {
       { n: 0 },
       { n: 100 },
     ]
-    const result = deciles(arr, { key: (el) => el.n })
+    const result = quantiles(arr, 10, { key: (el) => el.n })
     for (let i = 0; i <= 10; i++) {
       expect(result[i * 10].n).toBe(i * 10)
     }
   })
 
-  it("respects a custom method (Math.floor) for fractional indices", () => {
+  it("respects a custom method (Math.floor) for fractional indices (N=10)", () => {
     const arr = Array.from({ length: 10 }, (_, i) => i) // 0..9
-    const defaultResult = deciles(arr) // uses Math.round
-    const floorResult = deciles(arr, { method: Math.floor })
+    const defaultResult = quantiles(arr, 10) // uses Math.round
+    const floorResult = quantiles(arr, 10, { method: Math.floor })
     expect(defaultResult[50]).toBe(5) // round(0.5 * 9) = 5
     expect(floorResult[50]).toBe(4) // floor(0.5 * 9) = 4
   })
 
   it("handles arrays of length 1 by returning that element for all deciles", () => {
     const arr = [42]
-    const result = deciles(arr)
+    const result = quantiles(arr, 10)
     for (let i = 0; i <= 10; i++) {
       expect(result[i * 10]).toBe(42)
     }
+  })
+
+  // New tests for N != 10 follow.
+
+  it("supports quartiles (N=4) with expected labels 0,25,50,75,100", () => {
+    const arr = Array.from({ length: 9 }, (_, i) => i) // 0..8
+    const result = quantiles(arr, 4)
+    expect(result[0]).toBe(0) // index round(0 * 8)   = 0
+    expect(result[25]).toBe(2) // index round(0.25* 8) = 2
+    expect(result[50]).toBe(4) // index round(0.5 * 8) = 4
+    expect(result[75]).toBe(6) // index round(0.75* 8) = 6
+    expect(result[100]).toBe(8) // index round(1   * 8) = 8
+  })
+
+  it("supports tertiles (N=3) and label rounding to 33 and 67", () => {
+    const arr = Array.from({ length: 11 }, (_, i) => i) // 0..10
+    const result = quantiles(arr, 3) // labels via round(i*(100/3)) => 0,33,67,100
+    expect(result[0]).toBe(0) // round(0/3 * 10)  = 0
+    expect(result[33]).toBe(3) // round(1/3 * 10)  = 3
+    expect(result[67]).toBe(7) // round(2/3 * 10)  = 7
+    expect(result[100]).toBe(10) // round(1   * 10)  = 10
+  })
+
+  it("respects a custom method (Math.floor) for fractional indices when N != 10", () => {
+    const arr = Array.from({ length: 10 }, (_, i) => i) // 0..9
+    const defaultResult = quantiles(arr, 4) // uses Math.round
+    const floorResult = quantiles(arr, 4, { method: Math.floor })
+    expect(defaultResult[50]).toBe(5) // round(0.5 * 9) = 5
+    expect(floorResult[50]).toBe(4) // floor(0.5 * 9) = 4
+  })
+
+  it("returns undefined for empty array", () => {
+    expect(quantiles([], 4)).toBeUndefined()
+  })
+
+  it("throws if N is negative or not an integer", () => {
+    expect(() => quantiles([1, 2, 3], -1)).toThrow("N must be a positive integer")
+    expect(() => quantiles([1, 2, 3], 0)).toThrow("N must be a positive integer")
+    expect(() => quantiles([1, 2, 3], 2.5)).toThrow("N must be a positive integer")
   })
 })
