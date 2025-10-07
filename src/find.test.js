@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax */
 import { describe, expect, it } from "@jest/globals"
 
 const {

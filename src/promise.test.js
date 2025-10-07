@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax */
 /* eslint-disable prefer-promise-reject-errors */
 import { jest } from "@jest/globals"
 

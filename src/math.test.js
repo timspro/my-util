@@ -248,7 +248,6 @@ describe("formatPlus", () => {
 
   it("returns undefined for non-number, non-string input", () => {
     expect(formatPlus(undefined)).toBeUndefined()
-    // eslint-disable-next-line no-restricted-syntax
     expect(formatPlus(null)).toBeUndefined()
     expect(formatPlus({})).toBeUndefined()
     expect(formatPlus([])).toBeUndefined()
@@ -323,7 +322,6 @@ describe("isNumber", () => {
   it("returns false for non-number types", () => {
     expect(isNumber("123")).toBe(false)
     expect(isNumber(undefined)).toBe(false)
-    // eslint-disable-next-line no-restricted-syntax
     expect(isNumber(null)).toBe(false)
     expect(isNumber({})).toBe(false)
     expect(isNumber([])).toBe(false)

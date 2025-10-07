@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax */
 import { describe, expect, it, jest } from "@jest/globals"
 
 const { chunk, unique, duplicates, ascending, descending, multilevel, sortN } = await import(
@@ -515,7 +514,12 @@ describe("multilevel", () => {
 describe("sortN", () => {
   it("returns empty array when N <= 0", () => {
     expect(sortN([1, 2, 3], { N: 0, force: true })).toEqual([])
-    expect(sortN([1, 2, 3], { N: -5, force: true })).toEqual([])
+    expect(() => sortN([1, 2, 3], { N: -5, force: true })).toThrow(
+      /N must be a nonnegative integer/u
+    )
+    expect(() => sortN([1, 2, 3], { N: 1.5, force: true })).toThrow(
+      /N must be a nonnegative integer/u
+    )
   })
 
   it("returns the entire array sorted when N >= array.length and does not mutate original", () => {
@@ -526,7 +530,7 @@ describe("sortN", () => {
     expect(result).not.toBe(arr)
   })
 
-  it("returns the first N smallest elements (default ascending comparator)", () => {
+  it("returns the first N smallest elements (default ascending comparator, heap path)", () => {
     expect(sortN([5, 1, 3, 2, 4], { N: 3, force: true })).toEqual([1, 2, 3])
     expect(sortN([3, 1, 3, 2, 2], { N: 4, force: true })).toEqual([1, 2, 2, 3])
   })
@@ -542,14 +546,88 @@ describe("sortN", () => {
     expect(out.map((o) => o.v)).toEqual([1, 2, 3])
   })
 
-  it("does not mutate the original array when N < array.length", () => {
+  it("does not mutate the original array when N < array.length (heap path)", () => {
     const arr = [5, 1, 3, 2, 4]
     const out = sortN(arr, { N: 3, force: true })
     expect(out).toEqual([1, 2, 3])
     expect(arr).toEqual([5, 1, 3, 2, 4])
   })
 
-  it("returns the first N smallest elements (default ascending comparator)", () => {
+  it("returns the N elements in heap order when unsorted=true (heap path)", () => {
     expect(sortN([10, 1, 7, 3, 5], { N: 3, force: true, unsorted: true })).toEqual([5, 1, 3])
+  })
+
+  it("uses the 'normal' sort+truncate path when force=false and does not mutate original", () => {
+    const arr = [4, 2, 5, 1, 3] // small array and N/len >= 0.1 -> normal path
+    const out = sortN(arr, { N: 2 })
+    expect(out).toEqual([1, 2])
+    expect(arr).toEqual([4, 2, 5, 1, 3])
+    expect(out).not.toBe(arr)
+  })
+})
+
+describe("sortN mutate", () => {
+  it("returns empty array when N <= 0", () => {
+    const a = [1, 2, 3]
+    const result = sortN(a, { N: 0, force: true, mutate: true })
+    expect(a).toEqual([])
+    expect(result).toBe(a)
+    const b = [1, 2, 3]
+    expect(() => sortN(b, { N: -5, force: true, mutate: true })).toThrow(
+      /N must be a nonnegative integer/u
+    )
+    expect(() => sortN(b, { N: -1.5, force: true, mutate: true })).toThrow(
+      /N must be a nonnegative integer/u
+    )
+  })
+
+  it("returns the entire array sorted when N >= array.length", () => {
+    const array = [3, 1, 2]
+    const result = sortN(array, { N: 10, force: true, mutate: true })
+    expect(array).toEqual([1, 2, 3])
+    expect(result).toBe(array)
+  })
+
+  it("returns the first N smallest elements and mutates in-place (heap path)", () => {
+    const arr = [5, 1, 3, 2, 4]
+    const out = sortN(arr, { N: 3, force: true, mutate: true })
+    expect(out).toBe(arr)
+    expect(arr).toEqual([1, 2, 3])
+  })
+
+  it("respects a descending comparator and mutates in-place (heap path)", () => {
+    const arr = [5, 1, 3, 2, 4]
+    const out = sortN(arr, { N: 2, compare: descending(), force: true, mutate: true })
+    expect(out).toBe(arr)
+    expect(arr).toEqual([5, 4])
+  })
+
+  it("works with key-based comparator, mutating and truncating in-place (heap path)", () => {
+    const arr = [{ v: 3 }, {}, { v: 1 }, { v: null }, { v: 2 }, { v: undefined }]
+    const out = sortN(arr, { N: 3, compare: ascending("v"), force: true, mutate: true })
+    expect(out).toBe(arr)
+    expect(arr.length).toBe(3)
+    expect(out.map((o) => o.v)).toEqual([1, 2, 3])
+  })
+
+  it("mutates the original array when mutate=true and N < array.length (heap path)", () => {
+    const arr = [5, 1, 3, 2, 4]
+    const out = sortN(arr, { N: 3, force: true, mutate: true })
+    expect(out).toBe(arr)
+    expect(arr).toEqual([1, 2, 3])
+  })
+
+  it("returns the first N elements in heap order when unsorted=true (heap path, mutate=true)", () => {
+    const arr = [10, 1, 7, 3, 5]
+    const out = sortN(arr, { N: 3, force: true, unsorted: true, mutate: true })
+    expect(out).toBe(arr)
+    expect(arr).toEqual([5, 1, 3])
+  })
+
+  it("uses the 'normal' sort+truncate path when force=false and mutates in-place", () => {
+    const arr = [4, 2, 5, 1, 3] // small array and N/len >= 0.1 -> normal path
+    const out = sortN(arr, { N: 2, mutate: true })
+    expect(out).toBe(arr)
+    expect(arr).toEqual([1, 2])
   })
 })

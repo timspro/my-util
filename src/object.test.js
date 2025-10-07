@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax */
 import { jest } from "@jest/globals"
 import {
   deepCopy,
