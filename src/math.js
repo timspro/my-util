@@ -1,3 +1,5 @@
+import { ascending } from "./array.js"
+
 /**
  * Gives the remainder when the number is divided by modulus.
  * The sign of the remainder is always the same as the modulus i.e. mod(-1, 3) === 2 (not -1 as in -1 % 3).
@@ -149,4 +151,25 @@ export function range(start, end, increment = 1) {
  */
 export function isNumber(number) {
   return Number.isFinite(number)
+}
+
+/**
+ * Returns an object mapping decile labels ("0", "10", ..., "100") to the corresponding element in the array at that percentile.
+ * @template T
+ * @param {T[]} array
+ * @param {Object} $1
+ * @param {string|number|Function=} $1.key Can specify a key of the object to sort on or a function.
+ * @param {Function=} $1.method Method to use to choose which element when the percentile index is a fractional value.
+ *  Default is Math.round.
+ * @returns {Object}
+ */
+export function deciles(array, { key, method = Math.round } = {}) {
+  const sorted = [...array].sort(ascending(key))
+  const result = {}
+  for (let i = 0; i <= 10; i++) {
+    const percentile = i / 10
+    const percentileIndex = method(percentile * (sorted.length - 1))
+    result[i * 10] = sorted[percentileIndex]
+  }
+  return result
 }

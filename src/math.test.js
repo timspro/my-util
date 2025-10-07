@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@jest/globals"
-const { mod, formatPlus, line, sum, average, variance, range, isNumber } = await import(
-  "./math.js"
-)
+// ISSUE: range JSDoc uses "step" but implementation uses "increment". These should be consistent.
+const { mod, formatPlus, line, sum, average, variance, range, isNumber, deciles } =
+  await import("./math.js")
 
 describe("mod", () => {
   it("returns n when n is less than m and n is non-negative", () => {
@@ -328,5 +328,79 @@ describe("isNumber", () => {
     expect(isNumber(true)).toBe(false)
     expect(isNumber(Symbol("x"))).toBe(false)
     expect(isNumber(() => 1)).toBe(false)
+  })
+})
+
+describe("deciles", () => {
+  it("maps 0..100 deciles for an already sorted array of length 11 (default rounding)", () => {
+    const arr = Array.from({ length: 11 }, (_, i) => i)
+    const result = deciles(arr)
+    for (let i = 0; i <= 10; i++) {
+      expect(result[i * 10]).toBe(i)
+    }
+  })
+
+  it("sorts the input before selecting percentiles", () => {
+    const arr = [9, 7, 5, 3, 1, 2, 4, 6, 8, 0, 10]
+    const result = deciles(arr)
+    for (let i = 0; i <= 10; i++) {
+      expect(result[i * 10]).toBe(i)
+    }
+  })
+
+  it("supports a string key to select values for percentile positions", () => {
+    const arr = [
+      { v: 9 },
+      { v: 7 },
+      { v: 5 },
+      { v: 3 },
+      { v: 1 },
+      { v: 2 },
+      { v: 4 },
+      { v: 6 },
+      { v: 8 },
+      { v: 0 },
+      { v: 10 },
+    ]
+    const result = deciles(arr, { key: "v" })
+    for (let i = 0; i <= 10; i++) {
+      expect(result[i * 10].v).toBe(i)
+    }
+  })
+
+  it("supports a key function", () => {
+    const arr = [
+      { n: 90 },
+      { n: 70 },
+      { n: 50 },
+      { n: 30 },
+      { n: 10 },
+      { n: 20 },
+      { n: 40 },
+      { n: 60 },
+      { n: 80 },
+      { n: 0 },
+      { n: 100 },
+    ]
+    const result = deciles(arr, { key: (el) => el.n })
+    for (let i = 0; i <= 10; i++) {
+      expect(result[i * 10].n).toBe(i * 10)
+    }
+  })
+
+  it("respects a custom method (Math.floor) for fractional indices", () => {
+    const arr = Array.from({ length: 10 }, (_, i) => i) // 0..9
+    const defaultResult = deciles(arr) // uses Math.round
+    const floorResult = deciles(arr, { method: Math.floor })
+    expect(defaultResult[50]).toBe(5) // round(0.5 * 9) = 5
+    expect(floorResult[50]).toBe(4) // floor(0.5 * 9) = 4
+  })
+
+  it("handles arrays of length 1 by returning that element for all deciles", () => {
+    const arr = [42]
+    const result = deciles(arr)
+    for (let i = 0; i <= 10; i++) {
+      expect(result[i * 10]).toBe(42)
+    }
   })
 })
