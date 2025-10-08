@@ -158,14 +158,14 @@ export function isNumber(number) {
  * to the corresponding element in the array at that percentile.
  * @template T
  * @param {T[]} array
- * @param {number} N
  * @param {Object} $1
+ * @param {number} $1.N How many quantiles
  * @param {string|number|Function=} $1.key Can specify a key of the object to sort on or a function.
  * @param {Function=} $1.method Method to use to choose which element when the percentile index is a fractional value.
  *  Default is Math.round.
  * @returns {Object|undefined} Returns undefined is array is empty
  */
-export function quantiles(array, N, { key, method = Math.round } = {}) {
+export function quantiles(array, { N, key, method = Math.round }) {
   if (!(N > 0) || N % 1 !== 0) {
     throw new Error("N must be a positive integer")
   }
