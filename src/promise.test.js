@@ -132,6 +132,15 @@ describe("allSettled", () => {
     expect(result.results.every((r) => r.status === "fulfilled")).toBe(true)
   })
 
+  it("returns correct structure for all fulfilled", async () => {
+    const arr = [Promise.resolve(1), Promise.resolve(2), Promise.resolve(3)]
+    const result = await allSettled({ array: arr })
+    expect(result.values).toEqual([1, 2, 3])
+    expect(result.returned).toEqual([1, 2, 3])
+    expect(result.errors).toEqual([])
+    expect(result.results.every((r) => r.status === "fulfilled")).toBe(true)
+  })
+
   it("handles rejected promises and collects errors", async () => {
     const arr = [1, 2, 3]
     const cb = (x) => (x === 2 ? Promise.reject("fail") : x + 1)

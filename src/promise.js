@@ -72,12 +72,12 @@ export async function sleep(ms) {
  * @param {boolean=} $1.flatten Flattens values before returning; useful if promises return arrays
  * @param {boolean=} $1.abort If true, will return early if there are errors.
  *  If false (default), will process all elements in the array (like Promise.allSettled()).
- * @param {Function} callback
+ * @param {Function} callback Default is identity function to enable passing promises as "array".
  * @returns {Object} {results, values, returned, errors}
  */
 export async function allSettled(
   { array, limit, limiter, flatten = false, abort = false },
-  callback
+  callback = (promise) => promise
 ) {
   const results = []
   let returned = []
