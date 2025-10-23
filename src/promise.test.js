@@ -1,6 +1,11 @@
 /* eslint-disable prefer-promise-reject-errors */
 import { jest } from "@jest/globals"
 
+// Exported API under test:
+// - class PollError
+// - functions: poll, sleep, allSettled, intervalLimiter, alert, throwFirstReject
+// Code changes in this diff affect: allSettled (added "iterable" param and generalized to Iterable)
+
 import {
   alert,
   allSettled,
@@ -213,6 +218,20 @@ describe("allSettled", () => {
     expect(result.errors).toEqual(["fail2"])
     expect(cb).toHaveBeenCalledTimes(2)
     // Should not process [3,4] or [5,6]
+  })
+
+  it("accepts non-Array iterable via iterable option (Map)", async () => {
+    const map = new Map([
+      ["a", 1],
+      ["b", 2],
+      ["c", 3],
+    ])
+    const cb = ([k, v]) => `${k}:${v * 2}`
+    const result = await allSettled({ iterable: map, limit: 2 }, cb)
+    expect(result.values).toEqual(["a:2", "b:4", "c:6"])
+    expect(result.returned).toEqual(["a:2", "b:4", "c:6"])
+    expect(result.errors).toEqual([])
+    expect(result.results.every((r) => r.status === "fulfilled")).toBe(true)
   })
 })
 
