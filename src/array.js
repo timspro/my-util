@@ -1,22 +1,28 @@
 /**
- * Converts an array into an array of arrays, where each subarray has a maximum size of chunkSize.
+ * Converts an iterable into an array of arrays, where each subarray has a maximum size of chunkSize.
  * Note the last subarray may have a length less than chunkSize.
- * @param {Array} array
- * @param {number=} chunkSize If not provided, defaults to the length of array, returning the input array as one chunk.
+ * If the iterable has no elements, returns an empty array since there are no chunks.
+ * @param {Iterable} iterable
+ * @param {number=} chunkSize If not provided, returns an array consisting of one chunk, which has all the elements of input iterable.
  * @returns {Array}
  */
-export function chunk(array, chunkSize = array.length) {
-  if (!array.length) {
-    return []
+export function chunk(iterable, chunkSize = Infinity) {
+  if (chunkSize !== Infinity && (chunkSize <= 0 || chunkSize % 1 !== 0)) {
+    throw new Error("chunkSize must be a positive integer or Infinity")
   }
-  if (chunkSize <= 0 || chunkSize % 1 !== 0) {
-    throw new Error("chunkSize must be a positive integer")
+  const chunks = []
+  let currentChunk = []
+  for (const element of iterable) {
+    currentChunk.push(element)
+    if (currentChunk.length >= chunkSize) {
+      chunks.push(currentChunk)
+      currentChunk = []
+    }
   }
-  const chunked = []
-  for (let i = 0; i < array.length; i += chunkSize) {
-    chunked.push(array.slice(i, i + chunkSize))
+  if (currentChunk.length) {
+    chunks.push(currentChunk)
   }
-  return chunked
+  return chunks
 }
 
 /**

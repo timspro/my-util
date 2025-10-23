@@ -22,14 +22,20 @@ describe("chunk", () => {
     expect(chunk([1, 2], 2)).toEqual([[1, 2]])
   })
 
-  it("returns the entire array as one chunk if chunkSize is omitted", () => {
+  it("returns the entire iterable as one chunk if chunkSize is omitted", () => {
     expect(chunk([1, 2, 3])).toEqual([[1, 2, 3]])
   })
 
-  it("throws if chunkSize is not a positive integer", () => {
-    expect(() => chunk([1, 2, 3], 0)).toThrow("chunkSize must be a positive integer")
-    expect(() => chunk([1, 2, 3], -1)).toThrow("chunkSize must be a positive integer")
-    expect(() => chunk([1, 2, 3], 1.5)).toThrow("chunkSize must be a positive integer")
+  it("throws if chunkSize is not a positive integer or Infinity", () => {
+    expect(() => chunk([1, 2, 3], 0)).toThrow(
+      /chunkSize must be a positive integer or Infinity/u
+    )
+    expect(() => chunk([1, 2, 3], -1)).toThrow(
+      /chunkSize must be a positive integer or Infinity/u
+    )
+    expect(() => chunk([1, 2, 3], 1.5)).toThrow(
+      /chunkSize must be a positive integer or Infinity/u
+    )
   })
 
   it("handles chunkSize of 1 (each element in its own chunk)", () => {
@@ -42,6 +48,40 @@ describe("chunk", () => {
 
   it("returns one chunk if chunkSize is much larger than array length", () => {
     expect(chunk([1, 2, 3], 100)).toEqual([[1, 2, 3]])
+  })
+
+  it("works with Map iterables and chunks entries", () => {
+    const m = new Map([
+      ["a", 1],
+      ["b", 2],
+      ["c", 3],
+      ["d", 4],
+      ["e", 5],
+    ])
+    expect(chunk(m, 2)).toEqual([
+      [
+        ["a", 1],
+        ["b", 2],
+      ],
+      [
+        ["c", 3],
+        ["d", 4],
+      ],
+      [["e", 5]],
+    ])
+  })
+
+  it("works with non-array iterables when chunkSize is omitted (single chunk of entries)", () => {
+    const m = new Map([
+      ["a", 1],
+      ["b", 2],
+    ])
+    expect(chunk(m)).toEqual([
+      [
+        ["a", 1],
+        ["b", 2],
+      ],
+    ])
   })
 })
 
