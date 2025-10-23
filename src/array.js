@@ -4,6 +4,7 @@
  * If the iterable has no elements, returns an empty array since there are no chunks.
  * @param {Iterable} iterable
  * @param {number=} chunkSize If not provided, returns an array consisting of one chunk, which has all the elements of input iterable.
+ *  This has the same effect as passing a chunk size that is greater than the number of elements in the iterable.
  * @returns {Array}
  */
 export function chunk(iterable, chunkSize = Infinity) {
@@ -11,16 +12,16 @@ export function chunk(iterable, chunkSize = Infinity) {
     throw new Error("chunkSize must be a positive integer or Infinity")
   }
   const chunks = []
-  let currentChunk = []
+  let current = []
   for (const element of iterable) {
-    currentChunk.push(element)
-    if (currentChunk.length >= chunkSize) {
-      chunks.push(currentChunk)
-      currentChunk = []
+    current.push(element)
+    if (current.length >= chunkSize) {
+      chunks.push(current)
+      current = []
     }
   }
-  if (currentChunk.length) {
-    chunks.push(currentChunk)
+  if (current.length) {
+    chunks.push(current)
   }
   return chunks
 }
