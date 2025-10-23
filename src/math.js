@@ -166,7 +166,7 @@ export function isNumber(number) {
  * @returns {Object|undefined} Returns undefined is array is empty
  */
 export function quantiles(array, { N, key, method = Math.round }) {
-  if (!(N > 0) || N % 1 !== 0) {
+  if (!(N > 0) || !Number.isInteger(N)) {
     throw new Error("N must be a positive integer")
   }
   if (!array.length) {

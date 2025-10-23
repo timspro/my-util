@@ -8,7 +8,7 @@
  * @returns {Array}
  */
 export function chunk(iterable, chunkSize = Infinity) {
-  if (chunkSize !== Infinity && (chunkSize <= 0 || chunkSize % 1 !== 0)) {
+  if (chunkSize !== Infinity && (chunkSize <= 0 || !Number.isInteger(chunkSize))) {
     throw new Error("chunkSize must be a positive integer or Infinity")
   }
   const chunks = []
@@ -241,7 +241,7 @@ export function sortN(
   array,
   { N, compare = ascending(), unsorted = false, force = false, mutate = false }
 ) {
-  if (!(N >= 0) || N % 1 !== 0) {
+  if (!(N >= 0) || !Number.isInteger(N)) {
     throw new Error("N must be a nonnegative integer")
   }
   if (N === 0) {
