@@ -194,7 +194,6 @@ export function multilevel(...comparators) {
 }
 
 function siftDown(heap, i, compare, length) {
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const left = 2 * i + 1
     const right = left + 1

@@ -1,3 +1,4 @@
+/* eslint-disable complexity */
 export function findEq(array, desired, { key } = {}) {
   if (typeof key === "function") {
     for (let i = 0; i < array.length; i++) {
@@ -316,7 +317,6 @@ export function findMax(array, { key, cutoff = -Infinity } = {}) {
  *  When true, changes the default values of "from", "until", "to" to `array.length - 1`, `-1`, `0`.
  * @returns {T}
  */
-// eslint-disable-next-line complexity
 export function findTruthy(
   array,
   {
