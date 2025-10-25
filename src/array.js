@@ -5,7 +5,7 @@
  * @param {Iterable} iterable
  * @param {number=} chunkSize If not provided, returns an array consisting of one chunk, which has all the elements of input iterable.
  *  This has the same effect as passing a chunk size that is greater than the number of elements in the iterable.
- * @returns {Array}
+ * @returns {Array<Array>}
  */
 export function chunk(iterable, chunkSize = Infinity) {
   if (chunkSize !== Infinity && (chunkSize <= 0 || !Number.isInteger(chunkSize))) {

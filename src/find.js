@@ -181,7 +181,7 @@ export function findClosestGTE(array, desired, { key, cutoff = Infinity } = {}) 
  * Find the closest element in an array. If there is a tie, then returns the first matching element by order in the array.
  * If some values are undefined or null, they will be ignored. If no element is found, returns undefined.
  * If using for strings, need to specify different values for "cutoff" and "comparator".
- * "~" and "" are good cutoff string values for gt/gte and lt/lte respectively.
+ *  "~" and "" are good cutoff string values for gt/gte and lt/lte respectively.
  * @template T, V
  * @param {Array<T>} array
  * @param {V} value The desired value to search for
@@ -191,8 +191,8 @@ export function findClosestGTE(array, desired, { key, cutoff = Infinity } = {}) 
  *  If a function, called with the element, index and array (same as .map() callback) to produce the value to sort on.
  * @param {string=} options.comparator "diff", "lt", "lte", "gt", "gte", "eq". Default is "diff" which implies T is number.
  * @param {V=} options.cutoff If specified, sets a initial constraint on how close the found value must be.
- *  If used with lt, lte, value must be greater than or equal to cutoff.
- *  If used with gt, gte, value must be less than or equal to cutoff.
+ *  If used with lt/lte, value must be greater than or equal to cutoff.
+ *  If used with gt/gte, value must be less than or equal to cutoff.
  *  If used with diff, value's difference with desired must be less than or equal to cutoff.
  *  No effect with eq.
  * @returns {T|undefined}

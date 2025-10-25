@@ -4,14 +4,15 @@ import {
   addTime,
   getDateRange,
   getDayIndexInWeek,
-  // getDayOfWeek, // removed, replaced by getDayIndexInWeek
   getEasternTime,
   getMinute,
   getStartOfWeek,
   getTime,
   getTimeRange,
   isDate,
+  isDateString,
   isTime,
+  isTimeString,
   isUnixTimestamp,
   today,
 } from "./time.js"
@@ -54,15 +55,15 @@ describe("getEasternTime", () => {
     expect(def.timestamp).toEqual(explicit.timestamp)
   })
 
-  test("respects timezone parameter", () => {
+  test("respects timeZone parameter", () => {
     // 2024-06-01T12:34:56Z (UTC)
     const ts = 1717245296
     // New York (EDT, UTC-4)
-    const eastern = getEasternTime({ timestamp: ts, timezone: "America/New_York" })
+    const eastern = getEasternTime({ timestamp: ts, timeZone: "America/New_York" })
     // Los Angeles (PDT, UTC-7)
-    const pacific = getEasternTime({ timestamp: ts, timezone: "America/Los_Angeles" })
+    const pacific = getEasternTime({ timestamp: ts, timeZone: "America/Los_Angeles" })
     // UTC
-    const utc = getEasternTime({ timestamp: ts, timezone: "UTC" })
+    const utc = getEasternTime({ timestamp: ts, timeZone: "UTC" })
     expect(eastern.time).not.toBe(pacific.time)
     expect(eastern.time).not.toBe(utc.time)
     expect(pacific.time).not.toBe(utc.time)
@@ -71,11 +72,11 @@ describe("getEasternTime", () => {
     expect(utc.time.startsWith("12:34")).toBe(true) // UTC
   })
 
-  test("returns local time if timezone is empty string", () => {
-    // If timezone is falsy (""), should use local time zone
+  test("returns local time if timeZone is empty string", () => {
+    // If timeZone is falsy (""), should use local time zone
     // We'll compare to Date.toLocaleString with no timeZone option
     const ts = 1717245296
-    const local = getEasternTime({ timestamp: ts, timezone: "" })
+    const local = getEasternTime({ timestamp: ts, timeZone: "" })
     const expected = new Date(ts * 1000).toLocaleString("en-US", {
       hour12: false,
       year: "numeric",
@@ -141,8 +142,8 @@ describe("getTime", () => {
     expect(result).not.toHaveProperty("datetime")
   })
 
-  test("defaults to local time if timezone is not provided", () => {
-    // getTime({}) should use timezone = false, which disables the timeZone option and uses local
+  test("defaults to local time if timeZone is not provided", () => {
+    // getTime({}) should use timeZone = false, which disables the timeZone option and uses local
     const ts = 1717245296
     const local = getTime({ timestamp: ts })
     const expected = new Date(ts * 1000).toLocaleString("en-US", {
@@ -161,11 +162,11 @@ describe("getTime", () => {
     expect(local.time).toBe(time)
   })
 
-  test("passes timezone through to getEasternTime", () => {
-    // Should match getEasternTime with same timezone
+  test("passes timeZone through to getEasternTime", () => {
+    // Should match getEasternTime with same timeZone
     const ts = 1717245296
-    const pacific = getTime({ timestamp: ts, timezone: "America/Los_Angeles" })
-    const ref = getEasternTime({ timestamp: ts, timezone: "America/Los_Angeles" })
+    const pacific = getTime({ timestamp: ts, timeZone: "America/Los_Angeles" })
+    const ref = getEasternTime({ timestamp: ts, timeZone: "America/Los_Angeles" })
     expect(pacific).toEqual(ref)
   })
 
@@ -208,7 +209,7 @@ describe("getDayIndexInWeek", () => {
 
   test("throws on invalid date strings", () => {
     expect(() => getDayIndexInWeek("not-a-date")).toThrow(/invalid date/u)
-    // don't worry about bad dates like the following; can be caught with isDate()
+    // don't worry about bad dates like the following; can be caught with isDateString()
     expect(getDayIndexInWeek("2024-02-31")).toBe(6)
   })
 })
@@ -234,7 +235,19 @@ describe("getMinute", () => {
   })
 })
 
-describe("isDate", () => {
+describe("isDateString", () => {
+  test("validates correct dates", () => {
+    expect(isDateString("2024-06-01")).toBe(true)
+    expect(isDateString("1999-12-31")).toBe(true)
+  })
+
+  test("rejects invalid dates and formats", () => {
+    expect(isDateString("2024-02-31")).toBe(false)
+    expect(isDateString("2024/06/01")).toBe(false)
+  })
+})
+
+describe("isDate (deprecated wrapper)", () => {
   test("returns true for valid YYYY-MM-DD dates", () => {
     expect(isDate("2024-06-01")).toBe(true)
     expect(isDate("1999-12-31")).toBe(true)
@@ -266,7 +279,19 @@ describe("isDate", () => {
   })
 })
 
-describe("isTime", () => {
+describe("isTimeString", () => {
+  test("validates correct times", () => {
+    expect(isTimeString("00:00:00")).toBe(true)
+    expect(isTimeString("23:59:59")).toBe(true)
+  })
+
+  test("rejects invalid times and formats", () => {
+    expect(isTimeString("24:00:00")).toBe(false)
+    expect(isTimeString("12:34")).toBe(false)
+  })
+})
+
+describe("isTime (deprecated wrapper)", () => {
   test("returns true for valid HH:mm:ss times", () => {
     expect(isTime("00:00:00")).toBe(true)
     expect(isTime("23:59:59")).toBe(true)

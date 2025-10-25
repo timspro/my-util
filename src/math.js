@@ -14,8 +14,8 @@ export function mod(number, modulus) {
 /**
  * Given two points, returns a function
  * This function, given an "x" value, returns a "y" value that is on the same line as the first two points.
- * @param {[number, number]} firstPoint
- * @param {[number, number]} secondPoint
+ * @param {[number, number]} point1
+ * @param {[number, number]} point2
  * @returns {Function}
  */
 export function line([x1, y1], [x2, y2]) {
@@ -29,8 +29,8 @@ export function line([x1, y1], [x2, y2]) {
  * Calculate the sum of values in an array.
  * @template T
  * @param {Array<T>} array
- * @param {Object} [options]
- * @param {string|number|((element: T, index: number, array: Array<T>) => number)=} options.key
+ * @param {Object} $1
+ * @param {string|number|Function=} $1.key Can specify a key of the object or a function.
  * @returns {number}
  */
 export function sum(array, { key } = {}) {
@@ -55,8 +55,8 @@ export function sum(array, { key } = {}) {
  * Calculate the average (mean) of values in an array.
  * @template T
  * @param {Array<T>} array
- * @param {Object} [options]
- * @param {string|number|((element: T, index: number, array: Array<T>) => number)=} options.key
+ * @param {Object} $1
+ * @param {string|number|Function=} $1.key Can specify a key of the object or a function.
  * @returns {number}
  * @throws {Error} If the array is empty.
  */
@@ -71,8 +71,8 @@ export function average(array, { key } = {}) {
  * Calculate the variance of values in an array.
  * @template T
  * @param {Array<T>} array
- * @param {Object} [options]
- * @param {string|number|((element: T, index: number, array: Array<T>) => number)=} options.key
+ * @param {Object} $1
+ * @param {string|number|Function=} $1.key Can specify a key of the object or a function.
  * @returns {number}
  * @throws {Error} If the array is empty.
  */
@@ -145,7 +145,8 @@ export function range(start, end, increment = 1) {
 }
 
 /**
- * Check if the argument is a number (typeof is "number" and not NaN).
+ * Check if the argument is a number.
+ * This excludes Infinity and NaN, but otherwise is equivalent to `typeof number === "number"`.
  * @param {any} number
  * @returns {boolean}
  */
@@ -163,9 +164,11 @@ export function isNumber(number) {
  * @param {string|number|Function=} $1.key Can specify a key of the object to sort on or a function.
  * @param {Function=} $1.method Method to use to choose which element when the percentile index is a fractional value.
  *  Default is Math.round.
+ * @param {Function=} $.labeller Function that returns a quantile label given a fractional value (i.e. 33.3...).
+ *  Default is Math.round.
  * @returns {Object|undefined} Returns undefined is array is empty
  */
-export function quantiles(array, { N, key, method = Math.round }) {
+export function quantiles(array, { N, key, method = Math.round, labeller = Math.round }) {
   if (!(N > 0) || !Number.isInteger(N)) {
     throw new Error("N must be a positive integer")
   }
@@ -177,7 +180,7 @@ export function quantiles(array, { N, key, method = Math.round }) {
   for (let i = 0; i <= N; i++) {
     const percentile = i / N
     const percentileIndex = method(percentile * (sorted.length - 1))
-    const label = method(i * (100 / N))
+    const label = labeller(i * (100 / N))
     result[label] = sorted[percentileIndex]
   }
   return result

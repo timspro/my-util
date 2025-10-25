@@ -345,6 +345,9 @@ describe("isNumber", () => {
 })
 
 describe("quantiles", () => {
+  // ISSUE: JSDoc for labeller parameter uses "$.labeller" instead of "$1.labeller", which is inconsistent with the other params.
+  // ISSUE: If labeller maps multiple percent values to the same label, later entries overwrite earlier ones without warning.
+
   it("maps 0..100 deciles for an already sorted array of length 11 (default rounding)", () => {
     const arr = Array.from({ length: 11 }, (_, i) => i)
     const result = quantiles(arr, { N: 10 })
@@ -453,5 +456,25 @@ describe("quantiles", () => {
     expect(() => quantiles([1, 2, 3], { N: -1 })).toThrow("N must be a positive integer")
     expect(() => quantiles([1, 2, 3], { N: 0 })).toThrow("N must be a positive integer")
     expect(() => quantiles([1, 2, 3], { N: 2.5 })).toThrow("N must be a positive integer")
+  })
+
+  it("supports a custom labeller (Math.floor) independent of the index method", () => {
+    const arr = Array.from({ length: 11 }, (_, i) => i) // 0..10
+    const result = quantiles(arr, { N: 3, labeller: Math.floor }) // labels 0,33,66,100
+    expect(result[0]).toBe(0)
+    expect(result[33]).toBe(3) // index still uses default Math.round
+    expect(result[66]).toBe(7) // label differs from default (which would be 67)
+    expect(result[100]).toBe(10)
+  })
+
+  it("supports a custom labeller that produces string labels", () => {
+    const arr = Array.from({ length: 9 }, (_, i) => i) // 0..8
+    const labeller = (p) => `Q${Math.round(p / 25)}`
+    const result = quantiles(arr, { N: 4, labeller })
+    expect(result.Q0).toBe(0)
+    expect(result.Q1).toBe(2)
+    expect(result.Q2).toBe(4)
+    expect(result.Q3).toBe(6)
+    expect(result.Q4).toBe(8)
   })
 })

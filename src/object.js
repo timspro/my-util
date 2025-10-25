@@ -10,7 +10,8 @@ export function isObject(thing) {
 /**
  * Creates a new object with values created by calling callback on each of argument's values.
  * @param {Object} object
- * @param {Function} callback (value, key, object) => newValue // note if not changing value, should return value
+ * @param {Function} callback (value, key, object) => newValue
+ *  Note if not changing value, should return value.
  * @returns {Object}
  */
 export function mapValues(object, callback) {
@@ -25,7 +26,8 @@ export function mapValues(object, callback) {
 /**
  * Mutates the passed in object by calling callback on each of its values.
  * @param {Object} object
- * @param {Function} callback (value, key, object) => newValue // note if not changing value, should return value
+ * @param {Function} callback (value, key, object) => newValue
+ *  Note if not changing value, should return value.
  * @returns {Object}
  */
 export function mutateValues(object, callback) {
@@ -83,6 +85,7 @@ export function like(template) {
 /**
  * Copies the source recursively.
  * Does not preserve constructors of source or constructors of its keys' values.
+ * Preserves distinction between an array and an object i.e. `[1]` and `{"0": 1}`.
  * @template T
  * @param {T} source
  * @returns {T}
@@ -105,9 +108,9 @@ export function deepCopy(source) {
  *    the source object's value is a non-array object, recursively merges the source into the target.
  *  Otherwise, assigns source's key's value into the target's key.
  * This means that arrays are never merged into arrays or other objects.
- * @param {Object} target The target object that will receive the merged properties.
- * @param {...Object} sources The source objects whose properties will be merged into the target.
- * @returns {Object} The target object with the merged properties from all source objects.
+ * @param {Object} target The target object that will receive the merged properties
+ * @param {...Object} sources The source objects whose properties will be merged into the target
+ * @returns {Object} The target object with the merged properties from all source objects
  */
 export function deepMerge(target, ...sources) {
   for (const source of sources) {
@@ -136,7 +139,7 @@ export function deepMerge(target, ...sources) {
 
 /**
  * Merges a deep copy of each source object into target. See deepCopy() and deepMerge() documentation for caveats.
- * @param {Object} target The target object that will receive the merged properties.
+ * @param {Object} target The target object that will receive the merged properties
  * @param {...Object} sources The source objects whose properties will be merged into the returned object
  * @returns {Object}
  */
@@ -151,11 +154,11 @@ export function deepMergeCopy(target, ...sources) {
  * Objects and arrays are compared recursively by their properties and elements.
  * Primitives are compared with strict equality.
  * Caveats:
- *  Does not check class: [1] is considered equal to {0: 1}.
- *  Any Symbol keys in the arguments are ignored (Object.keys only returns string keys).
- * @param {any} a The first value to compare.
- * @param {any} b The second value to compare.
- * @returns {boolean} True if the values are deeply equal, false otherwise.
+ *  Does not check class: `[1]` is considered equal to `{"0": 1}`.
+ *  Any `Symbol` keys in the arguments are ignored (Object.keys only returns string keys).
+ * @param {any} a The first value to compare
+ * @param {any} b The second value to compare
+ * @returns {boolean} True if the values are deeply equal, false otherwise
  */
 export function deepEqual(a, b) {
   if (a === b) {

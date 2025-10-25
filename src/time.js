@@ -5,13 +5,13 @@ import { mod } from "./math.js"
  * @param {Object} $1
  * @param {boolean=} $1.floorMinute If true, floors to the nearest minute. If false, floors to the nearest second.
  * @param {number=} $1.timestamp Unix timestamp to use instead of current time.
- * @param {string=} $1.timezone Timezone to use instead of Eastern time.
+ * @param {string=} $1.timeZone Time zone to use instead of Eastern time. A falsy value corresponds to local time.
  * @returns {Object} { timestamp, date: YYYY-MM-DD, time: HH:mm:ss }
  */
 export function getEasternTime({
   floorMinute = false,
   timestamp = undefined,
-  timezone = "America/New_York",
+  timeZone = "America/New_York",
 } = {}) {
   if (!timestamp) {
     timestamp = new Date().getTime() / 1000
@@ -19,7 +19,7 @@ export function getEasternTime({
   timestamp = floorMinute ? Math.floor(timestamp / 60) * 60 : Math.floor(timestamp)
   // 'en-CA' (English - Canada) formats dates as YYYY-MM-DD and times in 24-hour format by default
   const string = new Date(timestamp * 1000).toLocaleString("en-CA", {
-    ...(timezone ? { timeZone: timezone } : {}),
+    ...(timeZone ? { timeZone } : {}),
     hour12: false,
     year: "numeric",
     month: "2-digit",
@@ -37,11 +37,11 @@ export function getEasternTime({
  * @param {Object} $1
  * @param {boolean=} $1.floorMinute If true, floors to the nearest minute. If false, floors to the nearest second.
  * @param {number=} $1.timestamp Unix timestamp to use instead of current time.
- * @param {string=} $1.timezone Timezone to use instead of local time. undefined corresponds to "America/New_York" and "" (falsy) corresponds to local time.
+ * @param {string=} $1.timeZone Time zone to use instead of local time. A falsy value (default) corresponds to local time.
  * @returns {Object} { timestamp, date, time, minute, datetime }
  */
-export function getTime({ floorMinute, timestamp, timezone = "" } = {}) {
-  return getEasternTime({ floorMinute, timestamp, timezone })
+export function getTime({ floorMinute, timestamp, timeZone = false } = {}) {
+  return getEasternTime({ floorMinute, timestamp, timeZone })
 }
 
 /**
@@ -82,7 +82,7 @@ export function getMinute(time) {
  * @param {string} string
  * @returns {boolean}
  */
-export function isDate(string) {
+export function isDateString(string) {
   const match = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/u.exec(string)
   if (!match) {
     return false
@@ -97,12 +97,30 @@ export function isDate(string) {
 }
 
 /**
+ * @deprecated Prefer isDateString()
+ * @param {string} string
+ * @returns {boolean}
+ */
+export function isDate(string) {
+  return isDateString(string)
+}
+
+/**
  * Checks if the string represent a valid HH:mm:ss time.
  * @param {string} string
  * @returns {boolean}
  */
-export function isTime(string) {
+export function isTimeString(string) {
   return /^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/u.test(string)
+}
+
+/**
+ * @deprecated Prefer isTimeString()
+ * @param {string} string
+ * @returns {boolean}
+ */
+export function isTime(string) {
+  return isTimeString(string)
 }
 
 /**
@@ -173,7 +191,8 @@ export function getTimeRange(start, end, { hours = 0, minutes = 1 } = {}) {
 /**
  * Adds a number of days to a date string.
  * @param {string} dateString YYYY-MM-DD
- * @param {number} days
+ * @param {Object} $1
+ * @param {number} $1.days
  * @returns {string}
  */
 export function addDays(dateString, { days = 0 } = {}) {
