@@ -45,7 +45,7 @@ export function getTime({ floorMinute, timestamp, timeZone = false } = {}) {
 }
 
 /**
- * Get today's date in YYYY-MM-DD format.
+ * Get today's date in YYYY-MM-DD format using local time.
  * @returns {string}
  */
 export function today() {
