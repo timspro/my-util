@@ -182,3 +182,20 @@ export function deepEqual(a, b) {
   }
   return true
 }
+
+/**
+ * Checks if the argument is a class.
+ * Example: `isClass(class {})`
+ * Returns: true
+ * In general, this will only work for third-party or user-defined classes, not built-ins.
+ * @param {any} thing
+ * @returns {boolean}
+ */
+export function isClass(thing) {
+  if (typeof thing !== "function") {
+    return false
+  }
+  const stringified = Function.prototype.toString.call(thing)
+  const result = /^class\s/u.test(stringified)
+  return result
+}

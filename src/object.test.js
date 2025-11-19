@@ -1,3 +1,4 @@
+/* eslint-disable no-empty-function */
 import { jest } from "@jest/globals"
 import {
   deepCopy,
@@ -5,6 +6,7 @@ import {
   deepMerge,
   deepMergeCopy,
   deleteUndefinedValues,
+  isClass,
   isObject,
   like,
   mapValues,
@@ -38,7 +40,7 @@ describe("isObject", () => {
 
   it("returns false for functions", () => {
     expect(isObject(() => {})).toBe(false)
-    // eslint-disable-next-line func-names, prefer-arrow-callback, no-empty-function
+    // eslint-disable-next-line func-names, prefer-arrow-callback
     expect(isObject(function () {})).toBe(false)
   })
 })
@@ -590,5 +592,35 @@ describe("deepEqual", () => {
   it("returns false if one object has undefined key and the other doesn't", () => {
     expect(deepEqual({ a: undefined }, {})).toBe(false)
     expect(deepEqual({}, { a: undefined })).toBe(false)
+  })
+})
+
+// --- isClass ---
+describe("isClass", () => {
+  it("returns true for class declarations and expressions", () => {
+    class A {}
+    const B = class {}
+    expect(isClass(A)).toBe(true)
+    expect(isClass(B)).toBe(true)
+  })
+
+  it("returns false for non-class functions", () => {
+    function f() {}
+    const g = () => {}
+    async function af() {}
+    function* gf() {}
+    expect(isClass(f)).toBe(false)
+    expect(isClass(g)).toBe(false)
+    expect(isClass(af)).toBe(false)
+    expect(isClass(gf)).toBe(false)
+  })
+
+  it("returns false for built-in constructors and non-functions", () => {
+    // Built-ins typically stringify as 'function X() { [native code] }'
+    expect(isClass(Date)).toBe(false)
+    expect(isClass(Map)).toBe(false)
+    expect(isClass(123)).toBe(false)
+    expect(isClass({})).toBe(false)
+    expect(isClass(null)).toBe(false)
   })
 })
