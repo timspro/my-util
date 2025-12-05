@@ -177,6 +177,59 @@ export function descending(transform) {
 }
 
 /**
+ * Returns an "ascending" comparator using natural string sort, to be used to sort an array of strings.
+ * Undefined or null values are always sorted to the end.
+ * @param {string|number|Function=} transform
+ *  If a function, calls the provided function on an element to get the value to sort on.
+ *  If a string or number, treats transform as a key and sorts on each element's value at key.
+ * @returns {Function}
+ */
+export function naturalAsc(transform) {
+  if (typeof transform === "function") {
+    return (a, b) => {
+      a = transform(a)
+      b = transform(b)
+      return compareUndefinedNull(a, b) ?? a.localeCompare(b, undefined, { numeric: true })
+    }
+  }
+  if (typeof transform === "string" || typeof transform === "number") {
+    return (a, b) => {
+      const invalid = compareUndefinedNull(a[transform], b[transform])
+      return invalid ?? a[transform].localeCompare(b[transform], undefined, { numeric: true })
+    }
+  }
+  return (a, b) => {
+    return compareUndefinedNull(a, b) ?? a.localeCompare(b, undefined, { numeric: true })
+  }
+}
+/**
+ * Returns a "descending" comparator using natural string sort, to be used to sort an array of strings.
+ * Undefined or null values are always sorted to the end.
+ * @param {string|number|Function=} transform
+ *  If a function, calls the provided function on an element to get the value to sort on.
+ *  If a string or number, treats transform as a key and sorts on each element's value at key.
+ * @returns {Function}
+ */
+export function naturalDesc(transform) {
+  if (typeof transform === "function") {
+    return (a, b) => {
+      b = transform(b)
+      a = transform(a)
+      return compareUndefinedNull(a, b) ?? b.localeCompare(a, undefined, { numeric: true })
+    }
+  }
+  if (typeof transform === "string" || typeof transform === "number") {
+    return (a, b) => {
+      const invalid = compareUndefinedNull(a[transform], b[transform])
+      return invalid ?? b[transform].localeCompare(a[transform], undefined, { numeric: true })
+    }
+  }
+  return (a, b) => {
+    return compareUndefinedNull(a, b) ?? b.localeCompare(a, undefined, { numeric: true })
+  }
+}
+
+/**
  * Combines multiple ascending and descending comparators.
  * @param  {...Function} comparators
  * @returns {Function}

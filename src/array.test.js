@@ -1,8 +1,16 @@
 import { describe, expect, it, jest } from "@jest/globals"
 
-const { chunk, unique, duplicates, ascending, descending, multilevel, sortN } = await import(
-  "./array.js"
-)
+const {
+  chunk,
+  unique,
+  duplicates,
+  ascending,
+  descending,
+  naturalAsc,
+  naturalDesc,
+  multilevel,
+  sortN,
+} = await import("./array.js")
 
 describe("chunk", () => {
   it("splits array into chunks of specified size", () => {
@@ -481,6 +489,71 @@ describe("descending", () => {
     const arr = [{ v: 2 }, {}, { v: 1 }, { v: null }]
     arr.sort(descending((o) => o.v))
     expect(arr.map((o) => o.v)).toEqual([2, 1, undefined, null])
+  })
+})
+
+describe("naturalAsc", () => {
+  it("sorts strings using natural order when transform is a function", () => {
+    const arr = ["a10", "a2", "a1"]
+    arr.sort(naturalAsc((s) => s))
+    expect(arr).toEqual(["a1", "a2", "a10"])
+  })
+
+  it("sorts by key using natural order and defers undefined/null to the end", () => {
+    const arr = [
+      { v: "file10" },
+      { v: undefined },
+      { v: "file2" },
+      { v: null },
+      { v: "file1" },
+    ]
+    arr.sort(naturalAsc("v"))
+    expect(arr.map((o) => o.v)).toEqual(["file1", "file2", "file10", undefined, null])
+  })
+
+  it("returns 0 for equal values (function and key paths)", () => {
+    expect(naturalAsc((x) => x)("a", "a")).toBe(0)
+    expect(naturalAsc("v")({ v: "x" }, { v: "x" })).toBe(0)
+  })
+
+  it("default comparator sorts with undefined/null at end but uses non-natural, descending semantics", () => {
+    const arr = [undefined, "b", null, "a", "c"]
+    arr.sort(naturalAsc())
+    expect(arr).toEqual(["a", "b", "c", null, undefined])
+    const numericLike = ["a10", "a2", "a1"]
+    numericLike.sort(naturalAsc())
+    expect(numericLike).toEqual(["a1", "a2", "a10"])
+  })
+})
+
+describe("naturalDesc", () => {
+  it("sorts strings using natural order descending (default path)", () => {
+    const arr = [undefined, "a", null, "c", "b"]
+    arr.sort(naturalDesc())
+    expect(arr).toEqual(["c", "b", "a", null, undefined])
+  })
+
+  it("sorts using transform function in natural descending order", () => {
+    const arr = ["a1", "a10", "a2"]
+    arr.sort(naturalDesc((s) => s))
+    expect(arr).toEqual(["a10", "a2", "a1"])
+  })
+
+  it("sorts by key using natural descending order and defers undefined/null to the end", () => {
+    const arr = [
+      { v: "file1" },
+      { v: "file10" },
+      { v: undefined },
+      { v: "file2" },
+      { v: null },
+    ]
+    arr.sort(naturalDesc("v"))
+    expect(arr.map((o) => o.v)).toEqual(["file10", "file2", "file1", undefined, null])
+  })
+
+  it("returns 0 for equal values (function and key paths)", () => {
+    expect(naturalDesc((x) => x)("a", "a")).toBe(0)
+    expect(naturalDesc("v")({ v: "x" }, { v: "x" })).toBe(0)
   })
 })
 
