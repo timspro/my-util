@@ -145,6 +145,24 @@ export function range(start, end, increment = 1) {
 }
 
 /**
+ * Create an array of numbers progressing from start up to and including end.
+ * @param {number} start
+ * @param {number=} end
+ * @param {number=} increment
+ * @returns {number[]}
+ */
+export function between(start, end, increment = 1) {
+  if (!(increment > 0)) {
+    return []
+  }
+  const results = []
+  for (let i = start; i <= end; i += increment) {
+    results.push(i)
+  }
+  return results
+}
+
+/**
  * Check if the argument is a number.
  * This excludes Infinity and NaN, but otherwise is equivalent to `typeof number === "number"`.
  * @param {any} number
