@@ -176,9 +176,30 @@ export function descending(transform) {
   }
 }
 
+function compareUndefinedNullEmpty(a, b) {
+  if (b === undefined || b === null || b === "") {
+    if (a === undefined || a === null || a === "") {
+      return 0
+    }
+    return -1
+  } else if (a === undefined || a === null || a === "") {
+    return 1
+  }
+  return undefined
+}
+
+function naturalCompare(a, b) {
+  if (a[0] === "-" && b[0] === "-") {
+    a = a.slice(1, a.length)
+    b = b.slice(1, b.length)
+    return b.localeCompare(a, undefined, { numeric: true })
+  }
+  return a.localeCompare(b, undefined, { numeric: true })
+}
+
 /**
  * Returns an "ascending" comparator using natural string sort, to be used to sort an array of strings.
- * Undefined or null values are always sorted to the end.
+ * Empty string or undefined or null values are always sorted to the end.
  * @param {string|number|Function=} transform
  *  If a function, calls the provided function on an element to get the value to sort on.
  *  If a string or number, treats transform as a key and sorts on each element's value at key.
@@ -189,22 +210,22 @@ export function naturalAsc(transform) {
     return (a, b) => {
       a = transform(a)
       b = transform(b)
-      return compareUndefinedNull(a, b) ?? a.localeCompare(b, undefined, { numeric: true })
+      return compareUndefinedNullEmpty(a, b) ?? naturalCompare(a, b)
     }
   }
   if (typeof transform === "string" || typeof transform === "number") {
     return (a, b) => {
-      const invalid = compareUndefinedNull(a[transform], b[transform])
-      return invalid ?? a[transform].localeCompare(b[transform], undefined, { numeric: true })
+      const invalid = compareUndefinedNullEmpty(a[transform], b[transform])
+      return invalid ?? naturalCompare(a[transform], b[transform])
     }
   }
   return (a, b) => {
-    return compareUndefinedNull(a, b) ?? a.localeCompare(b, undefined, { numeric: true })
+    return compareUndefinedNullEmpty(a, b) ?? naturalCompare(a, b)
   }
 }
 /**
  * Returns a "descending" comparator using natural string sort, to be used to sort an array of strings.
- * Undefined or null values are always sorted to the end.
+ * Empty string or undefined or null values are always sorted to the end.
  * @param {string|number|Function=} transform
  *  If a function, calls the provided function on an element to get the value to sort on.
  *  If a string or number, treats transform as a key and sorts on each element's value at key.
@@ -215,17 +236,17 @@ export function naturalDesc(transform) {
     return (a, b) => {
       b = transform(b)
       a = transform(a)
-      return compareUndefinedNull(a, b) ?? b.localeCompare(a, undefined, { numeric: true })
+      return compareUndefinedNullEmpty(a, b) ?? naturalCompare(b, a)
     }
   }
   if (typeof transform === "string" || typeof transform === "number") {
     return (a, b) => {
-      const invalid = compareUndefinedNull(a[transform], b[transform])
-      return invalid ?? b[transform].localeCompare(a[transform], undefined, { numeric: true })
+      const invalid = compareUndefinedNullEmpty(a[transform], b[transform])
+      return invalid ?? naturalCompare(b[transform], a[transform])
     }
   }
   return (a, b) => {
-    return compareUndefinedNull(a, b) ?? b.localeCompare(a, undefined, { numeric: true })
+    return compareUndefinedNullEmpty(a, b) ?? naturalCompare(b, a)
   }
 }
 

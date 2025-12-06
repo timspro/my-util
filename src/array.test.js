@@ -511,18 +511,36 @@ describe("naturalAsc", () => {
     expect(arr.map((o) => o.v)).toEqual(["file1", "file2", "file10", undefined, null])
   })
 
+  it("defers empty string to the end along with undefined/null (default path)", () => {
+    const arr = ["b", "", "a", undefined, null, "c"]
+    arr.sort(naturalAsc())
+    expect(arr).toEqual(["a", "b", "c", "", null, undefined])
+  })
+
+  it("defers empty string to the end along with undefined/null (key path)", () => {
+    const arr = [{ v: "" }, { v: "a2" }, { v: undefined }, { v: "a1" }, { v: null }]
+    arr.sort(naturalAsc("v"))
+    expect(arr.map((o) => o.v)).toEqual(["a1", "a2", "", undefined, null])
+  })
+
   it("returns 0 for equal values (function and key paths)", () => {
     expect(naturalAsc((x) => x)("a", "a")).toBe(0)
     expect(naturalAsc("v")({ v: "x" }, { v: "x" })).toBe(0)
   })
 
-  it("default comparator sorts with undefined/null at end but uses non-natural, descending semantics", () => {
+  it("default comparator sorts naturally with undefined/null at end", () => {
     const arr = [undefined, "b", null, "a", "c"]
     arr.sort(naturalAsc())
     expect(arr).toEqual(["a", "b", "c", null, undefined])
     const numericLike = ["a10", "a2", "a1"]
     numericLike.sort(naturalAsc())
     expect(numericLike).toEqual(["a1", "a2", "a10"])
+  })
+
+  it("handles negative number-like strings by comparing magnitudes (both negative)", () => {
+    const arr = ["-2", "-10", "-1"]
+    arr.sort(naturalAsc())
+    expect(arr).toEqual(["-10", "-2", "-1"])
   })
 })
 
@@ -551,9 +569,22 @@ describe("naturalDesc", () => {
     expect(arr.map((o) => o.v)).toEqual(["file10", "file2", "file1", undefined, null])
   })
 
+  it("defers empty string to the end along with undefined/null (default path)", () => {
+    const arr = ["b", "", "a", undefined, null, "c"]
+    arr.sort(naturalDesc())
+    expect(arr.slice(-3)).toEqual(["", null, undefined])
+    expect(arr.slice(0, 3)).toEqual(["c", "b", "a"])
+  })
+
   it("returns 0 for equal values (function and key paths)", () => {
     expect(naturalDesc((x) => x)("a", "a")).toBe(0)
     expect(naturalDesc("v")({ v: "x" }, { v: "x" })).toBe(0)
+  })
+
+  it("handles negative number-like strings by comparing magnitudes (both negative) in descending", () => {
+    const arr = ["-2", "-10", "-1"]
+    arr.sort(naturalDesc())
+    expect(arr).toEqual(["-1", "-2", "-10"])
   })
 })
 
