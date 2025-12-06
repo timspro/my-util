@@ -15,7 +15,7 @@ export function isObject(thing) {
  * @returns {Object}
  */
 export function mapValues(object, callback) {
-  const result = {}
+  const result = Object.create(null)
   const keys = Object.keys(object)
   for (const key of keys) {
     result[key] = callback(object[key], key, object)

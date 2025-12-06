@@ -176,7 +176,7 @@ export function quantiles(array, { N, key, method = Math.round, labeller = Math.
     return undefined
   }
   const sorted = [...array].sort(ascending(key))
-  const result = {}
+  const result = Object.create(null)
   for (let i = 0; i <= N; i++) {
     const percentile = i / N
     const percentileIndex = method(percentile * (sorted.length - 1))

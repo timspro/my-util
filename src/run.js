@@ -10,7 +10,7 @@ import { pathToFileURL } from "url"
 export function runnable(importMetaUrl, args, callback) {
   if (importMetaUrl === pathToFileURL(process.argv[1]).href) {
     // module was not imported but called directly
-    const parameter = {}
+    const parameter = Object.create(null)
     for (let i = 0; i < args.length; i++) {
       parameter[args[i]] = process.argv[i + 2]
     }

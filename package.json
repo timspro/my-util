@@ -1,6 +1,6 @@
 {
   "name": "@tim-code/my-util",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "",
   "type": "module",
   "author": "Tim Sprowl",
@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@jest/globals": "^30.2.0",
-    "@tim-code/eslint-config": "^2.0.1",
+    "@tim-code/eslint-config": "^2.1.0",
     "jest": "^30.2.0"
   },
   "jest": {
