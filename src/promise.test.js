@@ -3,11 +3,11 @@ import { jest } from "@jest/globals"
 
 // Exported API under test:
 // - class PollError
-// - functions: poll, sleep, allSettled, intervalLimiter, alert, throwFirstReject
-// Code changes in this diff affect: allSettled (added "iterable" param and generalized to Iterable)
+// - functions: poll, sleep, allSettled, allPatiently, intervalLimiter, alert, throwFirstReject
 
 import {
   alert,
+  allPatiently,
   allSettled,
   intervalLimiter,
   poll,
@@ -69,7 +69,6 @@ describe("poll", () => {
   it("waits before first call if wait=true", async () => {
     const cb = jest.fn().mockReturnValue(1)
     const promise = poll({ ms: 2, wait: true }, cb)
-    // Wait a little longer than ms to ensure callback is called
     await sleep(3)
     await expect(promise).resolves.toBe(1)
     expect(cb).toHaveBeenCalledTimes(1)
@@ -113,7 +112,6 @@ describe("sleep", () => {
     const promise = sleep(5)
     await expect(promise).resolves.toBeUndefined()
     const after = Date.now()
-    // Allow for some jitter
     expect(after - before).toBeGreaterThanOrEqual(5)
   })
 
@@ -176,6 +174,20 @@ describe("allSettled", () => {
     expect(result.returned).toEqual([1, 2, 2, 3])
   })
 
+  it("passes through null/undefined when flatten=true", async () => {
+    const arr = [0, 1, 2, 3]
+    const cb = (x) => {
+      if (x === 0) return [1, null]
+      if (x === 1) return undefined
+      if (x === 2) return [3]
+      return null
+    }
+    const result = await allSettled({ array: arr, flatten: true }, cb)
+    expect(result.values).toEqual([1, null, undefined, 3, null])
+    expect(result.returned).toEqual([1, null, undefined, 3, null])
+    expect(result.errors).toEqual([])
+  })
+
   it("handles empty array", async () => {
     const result = await allSettled({ array: [] }, () => 1)
     expect(result.values).toEqual([])
@@ -194,7 +206,6 @@ describe("allSettled", () => {
     }
     const limiter = jest.fn(async (n) => {
       limiterCalls.push(n)
-      // simulate async delay
       await sleep(1)
     })
     const result = await allSettled({ array: arr, limit: 2, limiter }, cb)
@@ -205,19 +216,14 @@ describe("allSettled", () => {
   })
 
   it("returns early if abort=true and any error occurs", async () => {
-    // Should process only up to the first chunk with a rejection, then stop
     const arr = [1, 2, 3, 4, 5, 6]
     const cb = jest
       .fn()
       .mockImplementation((x) => (x === 2 || x === 4 ? Promise.reject(`fail${x}`) : x))
-    // limit=2 so chunks: [1,2], [3,4], [5,6]
     const result = await allSettled({ array: arr, limit: 2, abort: true }, cb)
-    // The first chunk: [1,2] => 1 fulfilled, 1 rejected
-    // Should stop after first chunk with error
     expect(result.values.length).toBe(2)
     expect(result.errors).toEqual(["fail2"])
     expect(cb).toHaveBeenCalledTimes(2)
-    // Should not process [3,4] or [5,6]
   })
 
   it("accepts non-Array iterable via iterable option (Map)", async () => {
@@ -232,6 +238,41 @@ describe("allSettled", () => {
     expect(result.returned).toEqual(["a:2", "b:4", "c:6"])
     expect(result.errors).toEqual([])
     expect(result.results.every((r) => r.status === "fulfilled")).toBe(true)
+  })
+
+  it("throws joined error message when throws=true and adopts trace stack if provided", async () => {
+    const eWithTrace = new Error("e1")
+    eWithTrace.trace = ["trace line 1", "trace line 2"]
+    const e2 = new Error("third")
+    const arr = [1, 2, 3]
+    const cb = (x) => {
+      if (x === 1) return Promise.reject(eWithTrace)
+      if (x === 2) return x // fulfilled
+      return Promise.reject(e2)
+    }
+    let thrown
+    try {
+      await allSettled({ array: arr, throws: true }, cb)
+    } catch (e) {
+      thrown = e
+    }
+    expect(thrown).toBeInstanceOf(Error)
+    expect(thrown.message).toBe("e1; third")
+    expect(thrown.stack).toBe("trace line 1\ntrace line 2")
+  })
+})
+
+describe("allPatiently", () => {
+  it("returns flattened values when all promises resolve", async () => {
+    const promises = [Promise.resolve([1]), Promise.resolve([2, 3])]
+    const result = await allPatiently(promises, { flatten: true })
+    expect(result).toEqual([1, 2, 3])
+  })
+
+  it("throws with joined messages when any promise rejects", async () => {
+    const bad = new Error("bad")
+    const promises = [Promise.resolve(1), Promise.reject(bad), Promise.reject("oops")]
+    await expect(allPatiently(promises, { flatten: false })).rejects.toThrow("bad; oops")
   })
 })
 

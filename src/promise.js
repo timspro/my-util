@@ -2,6 +2,8 @@ import { chunk } from "./array.js"
 
 export class PollError extends Error {}
 
+export class PromiseAllError extends Error {}
+
 /**
  * Calls a function immediately and then every X milliseconds until the function does not return undefined, null or false.
  * Note that other falsy values such as 0 or "" or NaN will resolve and be returned.
@@ -70,14 +72,17 @@ export async function sleep(ms) {
  * @param {number=} $1.limit The number of calls to do in parallel. If not provided, each call is done in parallel.
  * @param {Function=} $1.limiter A function awaited after a group of parallel calls is processed.
  *  It is called with the number of parallel calls processed. Could be as simple as `() => sleep(10000)` if you wanted to wait 10 seconds between.
- * @param {boolean=} $1.flatten Flattens "values" and "returned" before returning; useful if promises return arrays
+ * @param {boolean=} $1.flatten If true, flattens "values" and "returned" before returning; useful if promises return arrays.
+ *  `null` and `undefined` return values are passed through.
  * @param {boolean=} $1.abort If true, will return early if there are errors.
  *  If false (default), will process all elements in the array (like Promise.allSettled()).
+ * @param {boolean=} $1.throws If true, will collect error messages, if any, together into one PromiseAllError object and throw it.
+ *  Sets the PromiseAllError's stack from one of the collected errors, if available.
  * @param {Function} callback Default is identity function to enable passing promises as "array".
  * @returns {Object} {results, values, returned, errors}
  */
 export async function allSettled(
-  { array, iterable = array, limit, limiter, flatten = false, abort = false },
+  { array, iterable = array, limit, limiter, flatten = false, abort = false, throws = false },
   callback = (promise) => promise
 ) {
   const results = []
@@ -103,11 +108,33 @@ export async function allSettled(
     }
     await limiter?.(elements.length)
   }
+  if (throws && errors.length) {
+    const string = errors.map((error) => error.message ?? error).join("; ")
+    const resultError = new PromiseAllError(string)
+    const { trace } = errors.find((error) => Array.isArray(error.trace)) ?? {}
+    if (trace) {
+      resultError.stack = trace.join("\n")
+    }
+    throw resultError
+  }
   if (flatten) {
-    values = values.flat()
-    returned = returned.flat()
+    values = values?.flat()
+    returned = returned?.flat()
   }
   return { values, returned, errors, results }
+}
+
+/**
+ * Parallelize awaiting an array of promises using `Promise.allSettled()` but throw if an error, similar to Promise.all().
+ * Also like Promise.all(), returns the return values of passed promises as an array.
+ * If multiple errors, joins error messages together and tries to keep a stack trace from the first error with a trace.
+ * @param {Array<Promise>} promises
+ * @param {Object} $1
+ * @param {boolean=} $1.flatten If true, flattens values before returning; useful if promises return arrays.
+ * @returns {Array}
+ */
+export async function allPatiently(promises, { flatten }) {
+  return (await allSettled({ iterable: promises, flatten, throws: true })).returned
 }
 
 /**
