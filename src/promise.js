@@ -109,11 +109,11 @@ export async function allSettled(
     await limiter?.(elements.length)
   }
   if (throws && errors.length) {
-    const string = errors.map((error) => error.message ?? error).join("; ")
+    const string = errors.map((error) => error?.message ?? error).join("; ")
     const resultError = new PromiseAllError(string)
-    const { trace } = errors.find((error) => Array.isArray(error.trace)) ?? {}
-    if (trace) {
-      resultError.stack = trace.join("\n")
+    const { stack } = errors.find((error) => error?.stack) ?? {}
+    if (stack) {
+      resultError.stack = stack
     }
     throw resultError
   }

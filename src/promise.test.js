@@ -2,7 +2,7 @@
 import { jest } from "@jest/globals"
 
 // Exported API under test:
-// - class PollError
+// - classes: PollError, PromiseAllError
 // - functions: poll, sleep, allSettled, allPatiently, intervalLimiter, alert, throwFirstReject
 
 import {
@@ -12,6 +12,7 @@ import {
   intervalLimiter,
   poll,
   PollError,
+  PromiseAllError,
   sleep,
   throwFirstReject,
 } from "./promise.js"
@@ -240,13 +241,12 @@ describe("allSettled", () => {
     expect(result.results.every((r) => r.status === "fulfilled")).toBe(true)
   })
 
-  it("throws joined error message when throws=true and adopts trace stack if provided", async () => {
-    const eWithTrace = new Error("e1")
-    eWithTrace.trace = ["trace line 1", "trace line 2"]
+  it("throws joined error message when throws=true and adopts stack from first error", async () => {
+    const e1 = new Error("e1")
     const e2 = new Error("third")
     const arr = [1, 2, 3]
     const cb = (x) => {
-      if (x === 1) return Promise.reject(eWithTrace)
+      if (x === 1) return Promise.reject(e1)
       if (x === 2) return x // fulfilled
       return Promise.reject(e2)
     }
@@ -256,9 +256,9 @@ describe("allSettled", () => {
     } catch (e) {
       thrown = e
     }
-    expect(thrown).toBeInstanceOf(Error)
+    expect(thrown).toBeInstanceOf(PromiseAllError)
     expect(thrown.message).toBe("e1; third")
-    expect(thrown.stack).toBe("trace line 1\ntrace line 2")
+    expect(thrown.stack).toBe(e1.stack)
   })
 })
 
