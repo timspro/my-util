@@ -133,7 +133,7 @@ export async function allSettled(
  * @param {boolean=} $1.flatten If true, flattens values before returning; useful if promises return arrays.
  * @returns {Array}
  */
-export async function allPatiently(promises, { flatten }) {
+export async function allPatiently(promises, { flatten } = {}) {
   return (await allSettled({ iterable: promises, flatten, throws: true })).returned
 }
 
