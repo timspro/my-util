@@ -9,9 +9,8 @@ import {
   getStartOfWeek,
   getTime,
   getTimeRange,
-  isDate,
+  getUnixTimestamp,
   isDateString,
-  isTime,
   isTimeString,
   isUnixTimestamp,
   today,
@@ -178,6 +177,26 @@ describe("getTime", () => {
   })
 })
 
+describe("getUnixTimestamp", () => {
+  test("parses Zulu (UTC) timestamp", () => {
+    expect(getUnixTimestamp("2024-06-01T12:34:56Z")).toBe(1717245296)
+  })
+
+  test("parses timestamp with positive offset", () => {
+    const expected = Date.UTC(2024, 5, 1, 10, 34, 56) / 1000 // 12:34:56+02:00 == 10:34:56Z
+    expect(getUnixTimestamp("2024-06-01T12:34:56+02:00")).toBe(expected)
+  })
+
+  test("floors fractional seconds", () => {
+    // 999ms floors down to the same second
+    expect(getUnixTimestamp("1970-01-01T00:00:00.999Z")).toBe(0)
+  })
+
+  test("returns NaN for invalid date string", () => {
+    expect(Number.isNaN(getUnixTimestamp("not-a-date"))).toBe(true)
+  })
+})
+
 describe("today", () => {
   test("returns today's date in YYYY-MM-DD format", () => {
     const expected = getTime().date
@@ -247,38 +266,6 @@ describe("isDateString", () => {
   })
 })
 
-describe("isDate (deprecated wrapper)", () => {
-  test("returns true for valid YYYY-MM-DD dates", () => {
-    expect(isDate("2024-06-01")).toBe(true)
-    expect(isDate("1999-12-31")).toBe(true)
-  })
-
-  test("returns false for invalid dates (e.g., 2024-02-31)", () => {
-    expect(isDate("2024-02-31")).toBe(false)
-    expect(isDate("2023-04-31")).toBe(false)
-  })
-
-  test("returns false for invalid formats", () => {
-    expect(isDate("2024/06/01")).toBe(false)
-    expect(isDate("06-01-2024")).toBe(false)
-    expect(isDate("2024-6-1")).toBe(false)
-    expect(isDate("20240601")).toBe(false)
-    expect(isDate("abcd-ef-gh")).toBe(false)
-  })
-
-  test("returns false for impossible months and days", () => {
-    expect(isDate("2024-00-10")).toBe(false)
-    expect(isDate("2024-13-10")).toBe(false)
-    expect(isDate("2024-01-00")).toBe(false)
-    expect(isDate("2024-01-32")).toBe(false)
-  })
-
-  test("returns true for leap day", () => {
-    expect(isDate("2024-02-29")).toBe(true)
-    expect(isDate("2023-02-29")).toBe(false)
-  })
-})
-
 describe("isTimeString", () => {
   test("validates correct times", () => {
     expect(isTimeString("00:00:00")).toBe(true)
@@ -288,26 +275,6 @@ describe("isTimeString", () => {
   test("rejects invalid times and formats", () => {
     expect(isTimeString("24:00:00")).toBe(false)
     expect(isTimeString("12:34")).toBe(false)
-  })
-})
-
-describe("isTime (deprecated wrapper)", () => {
-  test("returns true for valid HH:mm:ss times", () => {
-    expect(isTime("00:00:00")).toBe(true)
-    expect(isTime("23:59:59")).toBe(true)
-    expect(isTime("12:34:56")).toBe(true)
-  })
-
-  test("returns false for invalid times", () => {
-    expect(isTime("24:00:00")).toBe(false)
-    expect(isTime("12:60:00")).toBe(false)
-    expect(isTime("12:00:60")).toBe(false)
-    expect(isTime("1:00:00")).toBe(false)
-    expect(isTime("12:0:00")).toBe(false)
-    expect(isTime("12:00:0")).toBe(false)
-    expect(isTime("12:00")).toBe(false)
-    expect(isTime("120000")).toBe(false)
-    expect(isTime("ab:cd:ef")).toBe(false)
   })
 })
 
@@ -427,6 +394,14 @@ describe("getTimeRange", () => {
 
   test("handles input with no seconds", () => {
     expect(getTimeRange("12:00", "12:02")).toEqual(["12:00:00", "12:01:00", "12:02:00"])
+  })
+
+  // ISSUE: getTimeRange allows a zero step, which would otherwise loop forever; it's capped internally at 1440 iterations.
+  test("caps the number of results at MINUTES_IN_DAY when step is zero", () => {
+    const result = getTimeRange("12:00:00", "12:00:00", { hours: 0, minutes: 0 })
+    expect(result.length).toBe(24 * 60)
+    expect(result[0]).toBe("12:00:00")
+    expect(result[result.length - 1]).toBe("12:00:00")
   })
 })
 

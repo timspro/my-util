@@ -45,6 +45,16 @@ export function getTime({ floorMinute, timestamp, timeZone = false } = {}) {
 }
 
 /**
+ * Get Unix timestamp for a UTC date string.
+ * @param {string} utc UTC date time: "YYYY-MM-DDTHH:mm:ssZ" or with UTC offset
+ * @returns {number} Seconds since epoch
+ */
+export function getUnixTimestamp(utc) {
+  const timestamp = Math.floor(new Date(utc).getTime() / 1000)
+  return timestamp
+}
+
+/**
  * Get today's date in YYYY-MM-DD format using local time.
  * @returns {string}
  */
@@ -97,30 +107,12 @@ export function isDateString(string) {
 }
 
 /**
- * @deprecated Prefer isDateString()
- * @param {string} string
- * @returns {boolean}
- */
-export function isDate(string) {
-  return isDateString(string)
-}
-
-/**
  * Checks if the string represent a valid HH:mm:ss time.
  * @param {string} string
  * @returns {boolean}
  */
 export function isTimeString(string) {
   return /^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/u.test(string)
-}
-
-/**
- * @deprecated Prefer isTimeString()
- * @param {string} string
- * @returns {boolean}
- */
-export function isTime(string) {
-  return isTimeString(string)
 }
 
 /**
