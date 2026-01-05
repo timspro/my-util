@@ -1,24 +1,34 @@
 import { mod } from "./math.js"
 
+// `floorMinute` at first glance seems ugly and something like `floor: "minute"` seems better.
+// However, practically and realistically, it doesn't seem like we need other values for floor besides "second" and "minute".
+// So, then it seems more problematic to rely on an exact string to be passed... probably would need to throw on some other value.
+// We don't really ever want to disable flooring because we want timestamp, date, and time returned to represent the same thing.
 /**
  * Gets various ways of representing the current time in EDT. Floors to nearest second by default.
  * @param {Object} $1
- * @param {boolean=} $1.floorMinute If true, floors to the nearest minute. If false, floors to the nearest second.
- * @param {number=} $1.timestamp Unix timestamp to use instead of current time.
- * @param {string=} $1.timeZone Time zone to use instead of Eastern time. A falsy value corresponds to local time.
+ * @param {number=} $1.timestamp Unix timestamp to use instead of now (in seconds).
+ * @param {Date=} $1.dateInstance Alternative to specifying timestamp that is a Date instance.
+ *  This can be used to specify UTC: `getEasternTime({ dateInstance: new Date(utc) })`.
+ * @param {boolean=} $1.floorMinute If true, floors to the nearest minute. If false, floors to the nearest second (default).
+ * @param {string=} $1.timeZone Time zone to use instead of Eastern time. A falsy, not-undefined value corresponds to local time.
  * @returns {Object} { timestamp, date: YYYY-MM-DD, time: HH:mm:ss }
+ *  If invalid timestamp or dateInstance specified: { timestamp: NaN|Infinity, date: "Invalid date", time: undefined }
  */
 export function getEasternTime({
+  dateInstance = undefined,
+  timestamp = (dateInstance ?? new Date()).getTime() / 1000,
   floorMinute = false,
-  timestamp = undefined,
   timeZone = "America/New_York",
 } = {}) {
-  if (!timestamp) {
-    timestamp = new Date().getTime() / 1000
+  if (floorMinute) {
+    timestamp = Math.floor(timestamp / 60) * 60
+  } else {
+    timestamp = Math.floor(timestamp)
   }
-  timestamp = floorMinute ? Math.floor(timestamp / 60) * 60 : Math.floor(timestamp)
+  const flooredDateInstance = new Date(timestamp * 1000)
   // 'en-CA' (English - Canada) formats dates as YYYY-MM-DD and times in 24-hour format by default
-  const string = new Date(timestamp * 1000).toLocaleString("en-CA", {
+  const string = flooredDateInstance.toLocaleString("en-CA", {
     ...(timeZone ? { timeZone } : {}),
     hour12: false,
     year: "numeric",
@@ -35,13 +45,16 @@ export function getEasternTime({
 /**
  * Gets various ways of representing the current time in local timezone. Floors to nearest second by default.
  * @param {Object} $1
+ * @param {number=} $1.timestamp Unix timestamp to use instead of now (in seconds).
+ * @param {Date=} $1.dateInstance Alternative to specifying timestamp that is a Date instance.
+ *  This can be used to specify UTC: `getEasternTime({ dateInstance: new Date(utc) })`.
  * @param {boolean=} $1.floorMinute If true, floors to the nearest minute. If false, floors to the nearest second.
- * @param {number=} $1.timestamp Unix timestamp to use instead of current time.
- * @param {string=} $1.timeZone Time zone to use instead of local time. A falsy value (default) corresponds to local time.
- * @returns {Object} { timestamp, date, time, minute, datetime }
+ * @param {string=} $1.timeZone Time zone to use instead of local time. A falsy value corresponds to local time (default) .
+ * @returns {Object} { timestamp, date: YYYY-MM-DD, time: HH:mm:ss }
+ *  If invalid timestamp or dateInstance specified: { timestamp: NaN|Infinity, date: "Invalid date", time: undefined }
  */
-export function getTime({ floorMinute, timestamp, timeZone = false } = {}) {
-  return getEasternTime({ floorMinute, timestamp, timeZone })
+export function getTime({ timestamp, dateInstance, floorMinute, timeZone = false } = {}) {
+  return getEasternTime({ timestamp, dateInstance, floorMinute, timeZone })
 }
 
 /**
@@ -107,12 +120,41 @@ export function isDateString(string) {
 }
 
 /**
- * Checks if the string represent a valid HH:mm:ss time.
+ * Checks if the string represents a valid HH:mm:ss time.
+ * This will return false for times like "24:00:00".
+ * Does not handle milliseconds.
  * @param {string} string
  * @returns {boolean}
  */
 export function isTimeString(string) {
   return /^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/u.test(string)
+}
+
+/**
+ * Checks if the string represents a valid date time string similar to YYYY-MM-DDTHH:mm:ss.
+ * Does not handle milliseconds.
+ * @param {string} string
+ * @param {Object} $1
+ * @param {string=} $1.separator Can specify a different string separator between date and time. Defaults to "T".
+ * @returns {boolean}
+ */
+export function isDateTimeString(string, { separator = "T" } = {}) {
+  const [date, time] = string.split(separator)
+  return isDateString(date) && isTimeString(time)
+}
+
+/**
+ * Checks if the string represents a valid UTC date time similar to YYYY-MM-DDTHH:mm:ssZ.
+ * Does not handle milliseconds or UTC offsets.
+ * @param {string} string
+ * @returns {boolean}
+ */
+export function isUTCString(string) {
+  if (!string.endsWith("Z")) {
+    return false
+  }
+  const datetime = string.slice(0, string.length - 1)
+  return isDateTimeString(datetime)
 }
 
 /**

@@ -11,10 +11,17 @@ import {
   getTimeRange,
   getUnixTimestamp,
   isDateString,
+  isDateTimeString,
   isTimeString,
+  isUTCString,
   isUnixTimestamp,
   today,
 } from "./time.js"
+
+// Exported functions:
+// getEasternTime, getTime, getUnixTimestamp, today, getDayIndexInWeek, getMinute,
+// isDateString, isTimeString, isDateTimeString, isUTCString, isUnixTimestamp,
+// addTime, getTimeRange, addDays, getDateRange, getStartOfWeek
 
 describe("getEasternTime", () => {
   test("returns correct structure and types", () => {
@@ -44,6 +51,22 @@ describe("getEasternTime", () => {
     const floored = getEasternTime({ timestamp: ts, floorMinute: true })
     expect(floored.timestamp % 60).toBe(0)
     expect(floored.time.endsWith(":00")).toBe(true)
+  })
+
+  test("accepts dateInstance and matches equivalent timestamp", () => {
+    const ts = 1717245296 // 2024-06-01T12:34:56Z
+    const di = new Date(ts * 1000)
+    const a = getEasternTime({ dateInstance: di, timeZone: "UTC" })
+    const b = getEasternTime({ timestamp: ts, timeZone: "UTC" })
+    expect(a).toEqual(b)
+  })
+
+  test("dateInstance path respects floorMinute", () => {
+    const ts = 1717245296 // ...:56
+    const di = new Date(ts * 1000)
+    const floored = getEasternTime({ dateInstance: di, floorMinute: true, timeZone: "UTC" })
+    expect(floored.timestamp % 60).toBe(0)
+    expect(floored.time).toBe("12:34:00")
   })
 
   test("default parameters yield consistent output", () => {
@@ -169,6 +192,14 @@ describe("getTime", () => {
     expect(pacific).toEqual(ref)
   })
 
+  test("accepts dateInstance and matches equivalent timestamp", () => {
+    const ts = 1717245296
+    const di = new Date(ts * 1000)
+    const a = getTime({ dateInstance: di, timeZone: "UTC" })
+    const b = getTime({ timestamp: ts, timeZone: "UTC" })
+    expect(a).toEqual(b)
+  })
+
   test("floors to minute if floorMinute is true", () => {
     const ts = 1717245296
     const floored = getTime({ timestamp: ts, floorMinute: true })
@@ -233,7 +264,6 @@ describe("getDayIndexInWeek", () => {
   })
 })
 
-// New tests for getMinute
 describe("getMinute", () => {
   test("extracts minute from HH:mm:ss", () => {
     expect(getMinute("12:34:56")).toBe(34)
@@ -275,6 +305,42 @@ describe("isTimeString", () => {
   test("rejects invalid times and formats", () => {
     expect(isTimeString("24:00:00")).toBe(false)
     expect(isTimeString("12:34")).toBe(false)
+  })
+})
+
+describe("isDateTimeString", () => {
+  test("valid with default T separator", () => {
+    expect(isDateTimeString("2024-06-01T12:34:56")).toBe(true)
+  })
+
+  test("rejects invalid combinations", () => {
+    expect(isDateTimeString("2024-06-01T12:34")).toBe(false) // missing seconds
+    expect(isDateTimeString("2024-06-01T24:00:00")).toBe(false) // invalid hour
+    expect(isDateTimeString("2024-02-31T12:00:00")).toBe(false) // invalid date
+    expect(isDateTimeString("2024-06-01 12:34:56")).toBe(false) // wrong separator
+  })
+
+  test("supports custom separator", () => {
+    expect(isDateTimeString("2024-06-01 12:34:56", { separator: " " })).toBe(true)
+    expect(isDateTimeString("2024-06-01T12:34:56", { separator: " " })).toBe(false)
+  })
+})
+
+describe("isUTCString", () => {
+  test("validates proper Zulu UTC format", () => {
+    expect(isUTCString("2024-06-01T12:34:56Z")).toBe(true)
+  })
+
+  test("rejects strings without trailing Z", () => {
+    expect(isUTCString("2024-06-01T12:34:56")).toBe(false)
+  })
+
+  test("rejects invalid time/date and unsupported variants", () => {
+    expect(isUTCString("2024-06-01T24:00:00Z")).toBe(false) // invalid hour
+    expect(isUTCString("2024-02-31T12:00:00Z")).toBe(false) // invalid date
+    expect(isUTCString("2024-06-01T12:34:56+00:00")).toBe(false) // offset not supported
+    expect(isUTCString("2024-06-01T12:34:56.123Z")).toBe(false) // milliseconds not supported
+    expect(isUTCString("2024-06-01 12:34:56Z")).toBe(false) // wrong separator
   })
 })
 
@@ -494,7 +560,6 @@ describe("getDateRange", () => {
   })
 })
 
-// Tests for getStartOfWeek (newly exported function)
 describe("getStartOfWeek", () => {
   test("returns same date if input is Sunday", () => {
     expect(getStartOfWeek("2024-06-02")).toBe("2024-06-02") // Sunday
