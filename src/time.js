@@ -1,9 +1,5 @@
 import { mod } from "./math.js"
 
-// `floorMinute` at first glance seems ugly and something like `floor: "minute"` seems better.
-// However, practically and realistically, it doesn't seem like we need other values for floor besides "second" and "minute".
-// So, then it seems more problematic to rely on an exact string to be passed... probably would need to throw on some other value.
-// We don't really ever want to disable flooring because we want timestamp, date, and time returned to represent the same thing.
 /**
  * Gets various ways of representing the current time in EDT. Floors to nearest second by default.
  * @param {Object} $1
