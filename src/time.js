@@ -87,7 +87,7 @@ export function getDayIndexInWeek(string = today()) {
 
 /**
  * Get the minute from a time string.
- * @param {string} time HH:mm or HH:mm::ss
+ * @param {string} time HH:mm or HH:mm:ss
  * @returns {number} Between 0 and 59 inclusive
  */
 export function getMinute(time) {
