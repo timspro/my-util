@@ -194,6 +194,12 @@ function naturalCompare(a, b) {
     b = b.slice(1, b.length)
     return b.localeCompare(a, undefined, { numeric: true })
   }
+  if (a[0] === "+" && !Number.isNaN(Number(a))) {
+    a = a.slice(1, a.length)
+  }
+  if (b[0] === "+" && !Number.isNaN(Number(b))) {
+    b = b.slice(1, b.length)
+  }
   return a.localeCompare(b, undefined, { numeric: true })
 }
 

@@ -542,6 +542,18 @@ describe("naturalAsc", () => {
     arr.sort(naturalAsc())
     expect(arr).toEqual(["-10", "-2", "-1"])
   })
+
+  it("can sort negative to positive", () => {
+    const arr = ["-2", "+5", "0"]
+    arr.sort(naturalAsc())
+    expect(arr).toEqual(["-2", "0", "+5"])
+  })
+
+  it("handles leading plus signs on numeric-like strings", () => {
+    const arr = ["a", "+10", "+2", "+1"]
+    arr.sort(naturalAsc())
+    expect(arr).toEqual(["+1", "+2", "+10", "a"])
+  })
 })
 
 describe("naturalDesc", () => {
@@ -585,6 +597,18 @@ describe("naturalDesc", () => {
     const arr = ["-2", "-10", "-1"]
     arr.sort(naturalDesc())
     expect(arr).toEqual(["-1", "-2", "-10"])
+  })
+
+  it("can sort positive to negative", () => {
+    const arr = ["+5", "-2", "0"]
+    arr.sort(naturalDesc())
+    expect(arr).toEqual(["+5", "0", "-2"])
+  })
+
+  it("handles leading plus signs on numeric-like strings (descending)", () => {
+    const arr = ["+1", "+2", "+10", "a"]
+    arr.sort(naturalDesc())
+    expect(arr).toEqual(["a", "+10", "+2", "+1"])
   })
 })
 
