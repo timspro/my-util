@@ -2,6 +2,7 @@ import { describe, expect, test } from "@jest/globals"
 import {
   addDays,
   addTime,
+  convertToSeconds,
   getDateRange,
   getDayIndexInWeek,
   getEasternTime,
@@ -21,7 +22,7 @@ import {
 // Exported functions:
 // getEasternTime, getTime, getUnixTimestamp, today, getDayIndexInWeek, getMinute,
 // isDateString, isTimeString, isDateTimeString, isUTCString, isUnixTimestamp,
-// addTime, getTimeRange, addDays, getDateRange, getStartOfWeek
+// addTime, getTimeRange, addDays, getDateRange, getStartOfWeek, convertToSeconds
 
 describe("getEasternTime", () => {
   test("returns correct structure and types", () => {
@@ -584,5 +585,34 @@ describe("getStartOfWeek", () => {
     expect(getStartOfWeek("2023-01-07")).toBe("2023-01-01")
     // 2023-01-02 is Monday, so start of week is 2023-01-01
     expect(getStartOfWeek("2023-01-02")).toBe("2023-01-01")
+  })
+})
+
+describe("convertToSeconds", () => {
+  test("returns 0 for empty input object", () => {
+    expect(convertToSeconds({})).toBe(0)
+  })
+
+  test("converts single units correctly", () => {
+    expect(convertToSeconds({ minutes: 5 })).toBe(5 * 60)
+    expect(convertToSeconds({ hours: 2 })).toBe(2 * 3600)
+    expect(convertToSeconds({ days: 1 })).toBe(24 * 3600)
+    expect(convertToSeconds({ weeks: 1 })).toBe(7 * 24 * 3600)
+  })
+
+  test("converts combined weeks, days, hours, and minutes", () => {
+    // 1w + 2d + 3h + 4m = 788640 seconds
+    expect(convertToSeconds({ weeks: 1, days: 2, hours: 3, minutes: 4 })).toBe(788640)
+  })
+
+  test("supports fractional values (minutes: 0.5 => 30 seconds)", () => {
+    expect(convertToSeconds({ minutes: 0.5 })).toBe(30)
+  })
+
+  test("throws if any value is negative", () => {
+    const cases = [{ weeks: -1 }, { days: -1 }, { hours: -1 }, { minutes: -1 }]
+    for (const opts of cases) {
+      expect(() => convertToSeconds(opts)).toThrow("must be nonnegative")
+    }
   })
 })

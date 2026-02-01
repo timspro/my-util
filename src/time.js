@@ -260,3 +260,23 @@ export function getStartOfWeek(dateString) {
   const start = addDays(dateString, { days: -index })
   return start
 }
+
+/**
+ * Returns number of seconds from any combination of weeks, days, hours, and minutes.
+ * @param {Object} $1
+ * @param {number=} $1.weeks Default is 0
+ * @param {number=} $1.days Default is 0
+ * @param {number=} $1.hours Default is 0
+ * @param {number=} $1.minutes Default is 0
+ * @returns {number}
+ */
+export function convertToSeconds({ weeks = 0, days = 0, hours = 0, minutes = 0 }) {
+  if (!(weeks >= 0) || !(days >= 0) || !(hours >= 0) || !(minutes >= 0)) {
+    throw new Error("weeks, days, hours, and minutes must be nonnegative")
+  }
+  days += weeks * 7
+  hours += days * 24
+  minutes += hours * 60
+  const seconds = minutes * 60
+  return seconds
+}
