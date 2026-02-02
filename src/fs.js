@@ -12,7 +12,7 @@ const gzip = promisify(_gzip)
 /**
  * Get JSON from a path. If path ends with .gz, will automatically decompress data.
  * @param {string} path
- * @returns {Object|Array}
+ * @returns {Promise<Object|Array>}
  */
 export async function readJSON(path) {
   let buffer = await readFile(path)
@@ -43,7 +43,7 @@ export async function writeJSON(path, object, { indent = 2 } = {}) {
  * @param {Object} $1
  * @param {number=} $1.maxAge Max age to consider in milliseconds.
  * @param {boolean=} $1.throws Whether the function should throw or not if not found
- * @returns {Object|false}
+ * @returns {Promise<Object|false>}
  */
 export async function pathExists(path, { maxAge = undefined, throws = false } = {}) {
   try {

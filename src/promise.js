@@ -12,7 +12,7 @@ export class PromiseAllError extends Error {}
  * @param {boolean|number=} wait If true, waits before initially calling the callback. If a number, waits that many milliseconds.
  * @param {number=} attempts If a number, limits to that many invocations of callback before throwing a PollError.
  * @param {Function} callback The argument is the number of times the callback has been called previously.
- * @returns {any} The result of the callback
+ * @returns {Promise<any>} The result of the callback
  */
 export function poll({ ms, wait = false, attempts = undefined }, callback) {
   return new Promise((resolve, reject) => {
@@ -79,7 +79,7 @@ export async function sleep(ms) {
  * @param {boolean=} $1.throws If true, will collect error messages, if any, together into one PromiseAllError object and throw it.
  *  Sets the PromiseAllError's stack from one of the collected errors, if available.
  * @param {Function} callback Default is identity function to enable passing promises as "array".
- * @returns {Object} {results, values, returned, errors}
+ * @returns {Promise<{results: Array, values: Array, returned: Array, errors: Array}>}
  */
 export async function allSettled(
   { array, iterable = array, limit, limiter, flatten = false, abort = false, throws = false },
@@ -131,7 +131,7 @@ export async function allSettled(
  * @param {Array<Promise>} promises
  * @param {Object} $1
  * @param {boolean=} $1.flatten If true, flattens values before returning; useful if promises return arrays.
- * @returns {Array}
+ * @returns {Promise<Array>}
  */
 export async function allPatiently(promises, { flatten } = {}) {
   return (await allSettled({ iterable: promises, flatten, throws: true })).returned
@@ -186,7 +186,7 @@ export function alert(result) {
  * @param {number=} $1.limit If not provided, each call is done in parallel.
  * @param {boolean=} $1.flatten Flattens values before returning; useful if promises return arrays
  * @param {Function} callback
- * @returns {Object} {values, returned}
+ * @returns {Promise<{values: Array, returned: Array}>}
  */
 export async function throwFirstReject({ array, limit, flatten = false }, callback) {
   let values = []
