@@ -1,4 +1,4 @@
-import { describe, expect, test } from "@jest/globals"
+import { afterEach, describe, expect, test } from "@jest/globals"
 import {
   addDays,
   addTime,
@@ -6,9 +6,9 @@ import {
   getDateRange,
   getDayIndexInWeek,
   getEasternTime,
+  getLocalTime,
   getMinute,
   getStartOfWeek,
-  getTime,
   getTimeRange,
   getUnixTimestamp,
   isDateString,
@@ -16,13 +16,45 @@ import {
   isTimeString,
   isUTCString,
   isUnixTimestamp,
+  now,
+  resetNow,
+  setNow,
   today,
 } from "./time.js"
 
-// Exported functions:
-// getEasternTime, getTime, getUnixTimestamp, today, getDayIndexInWeek, getMinute,
+// Exported functions and variables:
+// now, setNow, resetNow, getEasternTime, getLocalTime, getUnixTimestamp, today, getDayIndexInWeek, getMinute,
 // isDateString, isTimeString, isDateTimeString, isUTCString, isUnixTimestamp,
 // addTime, getTimeRange, addDays, getDateRange, getStartOfWeek, convertToSeconds
+
+afterEach(() => {
+  // Ensure we don't leak a mocked now() into other tests
+  resetNow()
+})
+
+describe("now/setNow/resetNow", () => {
+  test("getEasternTime uses the injected now() when timestamp/dateInstance are not provided", () => {
+    const fixed = new Date("2024-01-02T03:04:05.678Z")
+    setNow(() => fixed)
+    const r = getEasternTime({ timeZone: "UTC" })
+    expect(r.date).toBe("2024-01-02")
+    expect(r.time).toBe("03:04:05")
+  })
+
+  test("setNow validates that the callback is a function", () => {
+    expect(() => setNow(123)).toThrow("now must be a function")
+    expect(() => setNow(null)).toThrow("now must be a function")
+  })
+
+  test("resetNow restores now() to system time source", () => {
+    setNow(() => new Date("1999-12-31T23:59:59.999Z"))
+    resetNow()
+    const t = now()
+    expect(t).toBeInstanceOf(Date)
+    // Allow a small delta from system clock
+    expect(Math.abs(t.getTime() - Date.now())).toBeLessThan(10)
+  })
+})
 
 describe("getEasternTime", () => {
   test("returns correct structure and types", () => {
@@ -155,9 +187,9 @@ describe("getEasternTime", () => {
   })
 })
 
-describe("getTime", () => {
+describe("getLocalTime", () => {
   test("returns same structure as getEasternTime", () => {
-    const result = getTime({})
+    const result = getLocalTime({})
     expect(typeof result.timestamp).toBe("number")
     expect(typeof result.date).toBe("string")
     expect(typeof result.time).toBe("string")
@@ -166,9 +198,9 @@ describe("getTime", () => {
   })
 
   test("defaults to local time if timeZone is not provided", () => {
-    // getTime({}) should use timeZone = false, which disables the timeZone option and uses local
+    // getLocalTime({}) should use timeZone = false, which disables the timeZone option and uses local
     const ts = 1717245296
-    const local = getTime({ timestamp: ts })
+    const local = getLocalTime({ timestamp: ts })
     const expected = new Date(ts * 1000).toLocaleString("en-US", {
       hour12: false,
       year: "numeric",
@@ -188,7 +220,7 @@ describe("getTime", () => {
   test("passes timeZone through to getEasternTime", () => {
     // Should match getEasternTime with same timeZone
     const ts = 1717245296
-    const pacific = getTime({ timestamp: ts, timeZone: "America/Los_Angeles" })
+    const pacific = getLocalTime({ timestamp: ts, timeZone: "America/Los_Angeles" })
     const ref = getEasternTime({ timestamp: ts, timeZone: "America/Los_Angeles" })
     expect(pacific).toEqual(ref)
   })
@@ -196,20 +228,26 @@ describe("getTime", () => {
   test("accepts dateInstance and matches equivalent timestamp", () => {
     const ts = 1717245296
     const di = new Date(ts * 1000)
-    const a = getTime({ dateInstance: di, timeZone: "UTC" })
-    const b = getTime({ timestamp: ts, timeZone: "UTC" })
+    const a = getLocalTime({ dateInstance: di, timeZone: "UTC" })
+    const b = getLocalTime({ timestamp: ts, timeZone: "UTC" })
     expect(a).toEqual(b)
   })
 
   test("floors to minute if floorMinute is true", () => {
     const ts = 1717245296
-    const floored = getTime({ timestamp: ts, floorMinute: true })
+    const floored = getLocalTime({ timestamp: ts, floorMinute: true })
     expect(floored.timestamp % 60).toBe(0)
     expect(floored.time.endsWith(":00")).toBe(true)
   })
 })
 
 describe("getUnixTimestamp", () => {
+  test("throws on invalid input", () => {
+    expect(() => getUnixTimestamp()).toThrow("UTC date time is not a string")
+    expect(() => getUnixTimestamp(1717245296000)).toThrow("UTC date time is not a string")
+    expect(() => getUnixTimestamp(new Date())).toThrow("UTC date time is not a string")
+  })
+
   test("parses Zulu (UTC) timestamp", () => {
     expect(getUnixTimestamp("2024-06-01T12:34:56Z")).toBe(1717245296)
   })
@@ -231,7 +269,7 @@ describe("getUnixTimestamp", () => {
 
 describe("today", () => {
   test("returns today's date in YYYY-MM-DD format", () => {
-    const expected = getTime().date
+    const expected = getLocalTime().date
     expect(today()).toBe(expected)
     expect(/^\d{4}-\d{2}-\d{2}$/u.test(today())).toBe(true)
   })

@@ -1,5 +1,34 @@
 import { mod } from "./math.js"
 
+const myNow = () => new Date()
+
+/**
+ * A function that is called with no arguments and returns the "current date and time" via a Date instance: "now".
+ * By default, the current date and time is given by the system.
+ */
+export let now = myNow
+
+/**
+ * Set a callback for "now". The callback will be called with no arguments and should return a Date instance.
+ * This will be used by getEasternTime()/getLocalTime() functions instead of system time when needed.
+ * This allows mocking the current date and time in non-testing environments.
+ * @param {() => Date} callback
+ */
+export function setNow(callback) {
+  if (typeof callback !== "function") {
+    throw new Error("now must be a function")
+  }
+  now = callback
+}
+
+/**
+ * Restore the callback for "now" to its original value.
+ * getEasternTime()/getLocalTime() will subsequently use system time.
+ */
+export function resetNow() {
+  now = myNow
+}
+
 /**
  * Gets various ways of representing the current time in EDT. Floors to nearest second by default.
  * @param {Object} $1
@@ -13,7 +42,7 @@ import { mod } from "./math.js"
  */
 export function getEasternTime({
   dateInstance = undefined,
-  timestamp = (dateInstance ?? new Date()).getTime() / 1000,
+  timestamp = (dateInstance ?? now()).getTime() / 1000,
   floorMinute = false,
   timeZone = "America/New_York",
 } = {}) {
@@ -49,7 +78,7 @@ export function getEasternTime({
  * @returns {Object} { timestamp, date: YYYY-MM-DD, time: HH:mm:ss }
  *  If invalid timestamp or dateInstance specified: { timestamp: NaN|Infinity, date: "Invalid date", time: undefined }
  */
-export function getTime({ timestamp, dateInstance, floorMinute, timeZone = false } = {}) {
+export function getLocalTime({ timestamp, dateInstance, floorMinute, timeZone = false } = {}) {
   return getEasternTime({ timestamp, dateInstance, floorMinute, timeZone })
 }
 
@@ -59,6 +88,9 @@ export function getTime({ timestamp, dateInstance, floorMinute, timeZone = false
  * @returns {number} Seconds since epoch
  */
 export function getUnixTimestamp(utc) {
+  if (typeof utc !== "string") {
+    throw new Error("UTC date time is not a string")
+  }
   const timestamp = Math.floor(new Date(utc).getTime() / 1000)
   return timestamp
 }
@@ -68,7 +100,7 @@ export function getUnixTimestamp(utc) {
  * @returns {string}
  */
 export function today() {
-  return getTime().date
+  return getLocalTime().date
 }
 
 /**
