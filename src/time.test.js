@@ -17,22 +17,21 @@ import {
   isUTCString,
   isUnixTimestamp,
   now,
-  resetNow,
   setNow,
   today,
 } from "./time.js"
 
 // Exported functions and variables:
-// now, setNow, resetNow, getEasternTime, getLocalTime, getUnixTimestamp, today, getDayIndexInWeek, getMinute,
+// now, setNow, getEasternTime, getLocalTime, getUnixTimestamp, today, getDayIndexInWeek, getMinute,
 // isDateString, isTimeString, isDateTimeString, isUTCString, isUnixTimestamp,
 // addTime, getTimeRange, addDays, getDateRange, getStartOfWeek, convertToSeconds
 
-afterEach(() => {
-  // Ensure we don't leak a mocked now() into other tests
-  resetNow()
-})
+describe("now/setNow", () => {
+  afterEach(() => {
+    // Ensure we don't leak a mocked now() into other tests
+    setNow()
+  })
 
-describe("now/setNow/resetNow", () => {
   test("getEasternTime uses the injected now() when timestamp/dateInstance are not provided", () => {
     const fixed = new Date("2024-01-02T03:04:05.678Z")
     setNow(() => fixed)
@@ -46,9 +45,9 @@ describe("now/setNow/resetNow", () => {
     expect(() => setNow(null)).toThrow("now must be a function")
   })
 
-  test("resetNow restores now() to system time source", () => {
+  test("setNow() restores now() to system time source", () => {
     setNow(() => new Date("1999-12-31T23:59:59.999Z"))
-    resetNow()
+    setNow()
     const t = now()
     expect(t).toBeInstanceOf(Date)
     // Allow a small delta from system clock

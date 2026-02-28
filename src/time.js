@@ -1,32 +1,29 @@
 import { mod } from "./math.js"
 
-const myNow = () => new Date()
+const systemNow = () => new Date()
 
 /**
  * A function that is called with no arguments and returns the "current date and time" via a Date instance: "now".
  * By default, the current date and time is given by the system.
  */
-export let now = myNow
+export let now = systemNow
 
 /**
  * Set a callback for "now". The callback will be called with no arguments and should return a Date instance.
  * This will be used by getEasternTime()/getLocalTime() functions instead of system time when needed.
  * This allows mocking the current date and time in non-testing environments.
- * @param {() => Date} callback
+ * If callback is undefined, sets (resets) now to be system now, as it is originally.
+ * @param {(() => Date)|undefined} callback
  */
-export function setNow(callback) {
+export function setNow(callback = undefined) {
+  if (callback === undefined) {
+    now = systemNow
+    return
+  }
   if (typeof callback !== "function") {
     throw new Error("now must be a function")
   }
   now = callback
-}
-
-/**
- * Restore the callback for "now" to its original value.
- * getEasternTime()/getLocalTime() will subsequently use system time.
- */
-export function resetNow() {
-  now = myNow
 }
 
 /**

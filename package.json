@@ -1,6 +1,6 @@
 {
   "name": "@tim-code/my-util",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "utility functions",
   "type": "module",
   "author": "Tim Sprowl",
