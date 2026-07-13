@@ -1,5 +1,5 @@
 /* eslint-disable no-empty-function */
-import { jest } from "@jest/globals"
+import { describe, expect, it, vi } from "vitest"
 import {
   deepCopy,
   deepEqual,
@@ -57,7 +57,7 @@ describe("mapValues", () => {
 
   it("callback receives value, key, and object", () => {
     const obj = { x: 1 }
-    const cb = jest.fn((v) => v + 1)
+    const cb = vi.fn((v) => v + 1)
     mapValues(obj, cb)
     expect(cb).toHaveBeenCalledWith(1, "x", obj)
   })
@@ -95,7 +95,7 @@ describe("mutateValues", () => {
 
   it("callback receives value, key, and object", () => {
     const obj = { x: 1 }
-    const cb = jest.fn((v) => v + 1)
+    const cb = vi.fn((v) => v + 1)
     mutateValues(obj, cb)
     expect(cb).toHaveBeenCalledWith(1, "x", obj)
   })

@@ -1,24 +1,28 @@
-import { beforeEach, describe, expect, it, jest } from "@jest/globals"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const readFileMock = jest.fn()
-const statMock = jest.fn()
-const tmpdirMock = jest.fn()
-const gunzipMock = jest.fn()
-const gzipMock = jest.fn()
-const writeFileMock = jest.fn()
-jest.unstable_mockModule("node:fs/promises", () => ({
+const { readFileMock, statMock, tmpdirMock, gunzipMock, gzipMock, writeFileMock } = vi.hoisted(
+  () => ({
+    readFileMock: vi.fn(),
+    statMock: vi.fn(),
+    tmpdirMock: vi.fn(),
+    gunzipMock: vi.fn(),
+    gzipMock: vi.fn(),
+    writeFileMock: vi.fn(),
+  })
+)
+vi.mock("node:fs/promises", () => ({
   readFile: readFileMock,
   stat: statMock,
   writeFile: writeFileMock,
 }))
-jest.unstable_mockModule("node:os", () => ({
+vi.mock("node:os", () => ({
   tmpdir: tmpdirMock,
 }))
-jest.unstable_mockModule("node:zlib", () => ({
+vi.mock("node:zlib", () => ({
   gunzip: gunzipMock,
   gzip: gzipMock,
 }))
-jest.unstable_mockModule("node:util", () => ({
+vi.mock("node:util", () => ({
   promisify: (mock) => mock,
 }))
 
@@ -27,7 +31,7 @@ const mod = await import("./fs.js")
 const { readJSON, writeJSON, pathExists, makeTempDirectory } = mod
 
 describe("readJSON", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => vi.clearAllMocks())
   it("parses JSON from file", async () => {
     readFileMock.mockResolvedValue(Buffer.from('{"a":1}'))
     const result = await readJSON("foo.json")
@@ -45,7 +49,7 @@ describe("readJSON", () => {
 })
 
 describe("writeJSON", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => vi.clearAllMocks())
   it("writes object as JSON with default indent", async () => {
     await writeJSON("foo.json", { x: 2 })
     const formatted = ["{", '  "x": 2', "}"].join("\n")
@@ -82,7 +86,7 @@ describe("writeJSON", () => {
 
 describe("pathExists", () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
   it("returns stats if file exists", async () => {
     const stats = { mtime: new Date(Date.now() - 1000) }

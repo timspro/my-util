@@ -1,5 +1,5 @@
 /* eslint-disable prefer-promise-reject-errors */
-import { jest } from "@jest/globals"
+import { describe, expect, it, vi } from "vitest"
 
 // Exported API under test:
 // - classes: PollError, PromiseAllError
@@ -19,7 +19,7 @@ import {
 
 describe("poll", () => {
   it("resolves immediately if callback returns a non-undefined/null/false value", async () => {
-    const cb = jest.fn().mockReturnValue(42)
+    const cb = vi.fn().mockReturnValue(42)
     const promise = poll({ ms: 1 }, cb)
     await expect(promise).resolves.toBe(42)
     expect(cb).toHaveBeenCalledTimes(1)
@@ -27,8 +27,7 @@ describe("poll", () => {
   })
 
   it("resolves after several attempts when callback returns undefined/null/false before a value", async () => {
-    const cb = jest
-      .fn()
+    const cb = vi.fn()
       .mockReturnValueOnce(undefined)
       .mockReturnValueOnce(null)
       .mockReturnValueOnce(false)
@@ -40,7 +39,7 @@ describe("poll", () => {
   })
 
   it('resolves if callback returns "" or NaN (should not treat as "keep polling")', async () => {
-    const cb = jest.fn().mockReturnValueOnce("").mockReturnValueOnce(NaN)
+    const cb = vi.fn().mockReturnValueOnce("").mockReturnValueOnce(NaN)
     const promise1 = poll({ ms: 1 }, cb)
     await expect(promise1).resolves.toBe("")
     expect(cb).toHaveBeenCalledTimes(1)
@@ -52,7 +51,7 @@ describe("poll", () => {
 
   it("rejects if callback throws", async () => {
     const error = new Error("fail")
-    const cb = jest.fn().mockImplementation(() => {
+    const cb = vi.fn().mockImplementation(() => {
       throw error
     })
     await expect(poll({ ms: 1 }, cb)).rejects.toBe(error)
@@ -61,14 +60,14 @@ describe("poll", () => {
 
   it("rejects if callback returns a rejected promise", async () => {
     const error = new Error("async fail")
-    const cb = jest.fn().mockReturnValue(Promise.reject(error))
+    const cb = vi.fn().mockReturnValue(Promise.reject(error))
     const promise = poll({ ms: 1 }, cb)
     await expect(promise).rejects.toBe(error)
     expect(cb).toHaveBeenCalledTimes(1)
   })
 
   it("waits before first call if wait=true", async () => {
-    const cb = jest.fn().mockReturnValue(1)
+    const cb = vi.fn().mockReturnValue(1)
     const promise = poll({ ms: 2, wait: true }, cb)
     await sleep(3)
     await expect(promise).resolves.toBe(1)
@@ -76,7 +75,7 @@ describe("poll", () => {
   })
 
   it("waits specified ms before first call if wait is a number", async () => {
-    const cb = jest.fn().mockReturnValue(1)
+    const cb = vi.fn().mockReturnValue(1)
     const promise = poll({ ms: 2, wait: 5 }, cb)
     await sleep(4)
     expect(cb).not.toHaveBeenCalled()
@@ -86,7 +85,7 @@ describe("poll", () => {
   })
 
   it("rejects with PollError if attempts is reached", async () => {
-    const cb = jest.fn().mockReturnValue(undefined)
+    const cb = vi.fn().mockReturnValue(undefined)
     const promise = poll({ ms: 1, attempts: 3 }, cb)
     await expect(promise).rejects.toBeInstanceOf(PollError)
     await expect(promise).rejects.toThrow("max attempts reached")
@@ -95,8 +94,7 @@ describe("poll", () => {
   })
 
   it("resolves if callback returns a value before reaching max attempts", async () => {
-    const cb = jest
-      .fn()
+    const cb = vi.fn()
       .mockReturnValueOnce(undefined)
       .mockReturnValueOnce(undefined)
       .mockReturnValueOnce(5)
@@ -205,7 +203,7 @@ describe("allSettled", () => {
       calls.push(x)
       return x
     }
-    const limiter = jest.fn(async (n) => {
+    const limiter = vi.fn(async (n) => {
       limiterCalls.push(n)
       await sleep(1)
     })
@@ -218,8 +216,7 @@ describe("allSettled", () => {
 
   it("returns early if abort=true and any error occurs", async () => {
     const arr = [1, 2, 3, 4, 5, 6]
-    const cb = jest
-      .fn()
+    const cb = vi.fn()
       .mockImplementation((x) => (x === 2 || x === 4 ? Promise.reject(`fail${x}`) : x))
     const result = await allSettled({ array: arr, limit: 2, abort: true }, cb)
     expect(result.values.length).toBe(2)

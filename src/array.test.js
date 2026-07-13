@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from "@jest/globals"
+import { describe, expect, it, vi } from "vitest"
 
 const {
   chunk,
@@ -657,15 +657,15 @@ describe("multilevel", () => {
 
   it("short-circuits after first non-zero comparator", () => {
     const calls = []
-    const cmp1 = jest.fn(() => {
+    const cmp1 = vi.fn(() => {
       calls.push("cmp1")
       return 0
     })
-    const cmp2 = jest.fn(() => {
+    const cmp2 = vi.fn(() => {
       calls.push("cmp2")
       return -1
     })
-    const cmp3 = jest.fn(() => {
+    const cmp3 = vi.fn(() => {
       calls.push("cmp3")
       return 1
     })

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@jest/globals"
+import { describe, expect, it } from "vitest"
 import { between } from "./math.js"
 
 // EXPORTED FUNCTIONS UNDER TEST:
