@@ -10,6 +10,8 @@ const {
   naturalDesc,
   multilevel,
   sortN,
+  toBottom,
+  toTop,
 } = await import("./array.js")
 
 describe("chunk", () => {
@@ -797,5 +799,85 @@ describe("sortN mutate", () => {
     const out = sortN(arr, { N: 2, mutate: true })
     expect(out).toBe(arr)
     expect(arr).toEqual([1, 2])
+  })
+})
+
+describe("toBottom", () => {
+  it("sorts matching primitives to the bottom, preserving other order", () => {
+    const arr = [1, 2, 3, 2, 4]
+    arr.sort(toBottom(2))
+    expect(arr).toEqual([1, 3, 4, 2, 2])
+  })
+
+  it("returns 0 when neither value matches", () => {
+    expect(toBottom(99)(1, 2)).toBe(0)
+  })
+
+  it("returns 0 when both values match", () => {
+    expect(toBottom(2)(2, 2)).toBe(0)
+  })
+
+  it("sorts objects matching a key value to the bottom (string key)", () => {
+    const arr = [{ v: 1 }, { v: 2 }, { v: 3 }, { v: 2 }]
+    arr.sort(toBottom(2, { key: "v" }))
+    expect(arr.map((o) => o.v)).toEqual([1, 3, 2, 2])
+  })
+
+  it("sorts objects matching a key value to the bottom (numeric key)", () => {
+    const arr = [{ 0: 1 }, { 0: 2 }, { 0: 3 }]
+    arr.sort(toBottom(2, { key: 0 }))
+    expect(arr.map((o) => o[0])).toEqual([1, 3, 2])
+  })
+
+  it("treats a missing key as equivalent to undefined", () => {
+    const arr = [{ v: 1 }, {}, { v: 2 }]
+    arr.sort(toBottom(undefined, { key: "v" }))
+    expect(arr.map((o) => o.v)).toEqual([1, 2, undefined])
+  })
+
+  it("sorts using a function to derive the value to check", () => {
+    const arr = [{ v: 1 }, { v: 2 }, { v: 3 }]
+    arr.sort(toBottom(2, { key: (o) => o.v }))
+    expect(arr.map((o) => o.v)).toEqual([1, 3, 2])
+  })
+})
+
+describe("toTop", () => {
+  it("sorts matching primitives to the top, preserving other order", () => {
+    const arr = [1, 2, 3, 2, 4]
+    arr.sort(toTop(2))
+    expect(arr).toEqual([2, 2, 1, 3, 4])
+  })
+
+  it("returns 0 when neither value matches", () => {
+    expect(toTop(99)(1, 2)).toBe(0)
+  })
+
+  it("returns 0 when both values match", () => {
+    expect(toTop(2)(2, 2)).toBe(0)
+  })
+
+  it("sorts objects matching a key value to the top (string key)", () => {
+    const arr = [{ v: 1 }, { v: 2 }, { v: 3 }, { v: 2 }]
+    arr.sort(toTop(2, { key: "v" }))
+    expect(arr.map((o) => o.v)).toEqual([2, 2, 1, 3])
+  })
+
+  it("sorts objects matching a key value to the top (numeric key)", () => {
+    const arr = [{ 0: 1 }, { 0: 2 }, { 0: 3 }]
+    arr.sort(toTop(2, { key: 0 }))
+    expect(arr.map((o) => o[0])).toEqual([2, 1, 3])
+  })
+
+  it("treats a missing key as equivalent to undefined", () => {
+    const arr = [{ v: 1 }, {}, { v: 2 }]
+    arr.sort(toTop(undefined, { key: "v" }))
+    expect(arr.map((o) => o.v)).toEqual([undefined, 1, 2])
+  })
+
+  it("sorts using a function to derive the value to check", () => {
+    const arr = [{ v: 1 }, { v: 2 }, { v: 3 }]
+    arr.sort(toTop(2, { key: (o) => o.v }))
+    expect(arr.map((o) => o.v)).toEqual([2, 1, 3])
   })
 })

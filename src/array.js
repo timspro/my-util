@@ -205,6 +205,8 @@ function naturalCompare(a, b) {
 
 /**
  * Returns an "ascending" comparator using natural string sort, to be used to sort an array of strings.
+ * This allows numbers to be sorted according to how large they are (i.e 100 after 11),
+ *  while allowing strings to be sorted alphabetically.
  * Empty string or undefined or null values are always sorted to the end.
  * @param {string|number|Function=} transform
  *  If a function, calls the provided function on an element to get the value to sort on.
@@ -231,6 +233,8 @@ export function naturalAsc(transform) {
 }
 /**
  * Returns a "descending" comparator using natural string sort, to be used to sort an array of strings.
+ * Notably this sort allow numbers to be sorted according to how large they are (i.e 100 after 11),
+ *  while allowing strings to be sorted alphabetically.
  * Empty string or undefined or null values are always sorted to the end.
  * @param {string|number|Function=} transform
  *  If a function, calls the provided function on an element to get the value to sort on.
@@ -355,4 +359,110 @@ export function sortN(
     return heap
   }
   return heap.sort(compare)
+}
+
+/**
+ * Returns a comparator to be used with .sort().
+ * Elements that equal (===) the passed value will be sorted to the bottom of the array.
+ * Other elements will have the the same order as before.
+ * @param {any} value
+ * @param {Object} $1
+ * @param {string|number|Function=} $1.key
+ *  If a function, calls the provided function on an element to get the value to check when sorting.
+ *  If a string or number, checks each element's value at key when sorting. A missing key is considered equivalent to undefined.
+ * @returns {Function}
+ */
+export function toBottom(value, { key } = {}) {
+  if (typeof key === "function") {
+    return (a, b) => {
+      if (key(a) === value) {
+        if (key(b) === value) {
+          return 0
+        }
+        return 1
+      }
+      if (key(b) === value) {
+        return -1
+      }
+      return 0
+    }
+  } else if (typeof key === "string" || typeof key === "number") {
+    return (a, b) => {
+      if (a[key] === value) {
+        if (b[key] === value) {
+          return 0
+        }
+        return 1
+      }
+      if (b[key] === value) {
+        return -1
+      }
+      return 0
+    }
+  }
+  return (a, b) => {
+    if (a === value) {
+      if (b === value) {
+        return 0
+      }
+      return 1
+    }
+    if (b === value) {
+      return -1
+    }
+    return 0
+  }
+}
+
+/**
+ * Returns a comparator to be used with .sort().
+ * Elements that equal (===) the passed value will be sorted to the top of the array.
+ * Other elements will have the the same order as before.
+ * @param {any} value
+ * @param {Object} $1
+ * @param {string|number|Function=} $1.key
+ *  If a function, calls the provided function on an element to get the value to check when sorting.
+ *  If a string or number, checks each element's value at key when sorting. A missing key is considered equivalent to undefined.
+ * @returns {Function}
+ */
+export function toTop(value, { key } = {}) {
+  if (typeof key === "function") {
+    return (a, b) => {
+      if (key(a) === value) {
+        if (key(b) === value) {
+          return 0
+        }
+        return -1
+      }
+      if (key(b) === value) {
+        return 1
+      }
+      return 0
+    }
+  } else if (typeof key === "string" || typeof key === "number") {
+    return (a, b) => {
+      if (a[key] === value) {
+        if (b[key] === value) {
+          return 0
+        }
+        return -1
+      }
+      if (b[key] === value) {
+        return 1
+      }
+      return 0
+    }
+  }
+  return (a, b) => {
+    if (a === value) {
+      if (b === value) {
+        return 0
+      }
+      return -1
+    }
+    if (b === value) {
+      return 1
+    }
+    return 0
+  }
 }
