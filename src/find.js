@@ -1,4 +1,6 @@
 /* eslint-disable complexity */
+
+// @ts-ignore Don't type all these helper functions
 export function findEq(array, desired, { key } = {}) {
   if (typeof key === "function") {
     for (let i = 0; i < array.length; i++) {
@@ -25,6 +27,7 @@ export function findEq(array, desired, { key } = {}) {
   return undefined
 }
 
+// @ts-ignore
 export function findSmallestDiff(array, desired, { key, cutoff = Infinity } = {}) {
   let closest
   if (typeof key === "function") {
@@ -58,6 +61,7 @@ export function findSmallestDiff(array, desired, { key, cutoff = Infinity } = {}
   return closest
 }
 
+// @ts-ignore
 export function findClosestLT(array, desired, { key, cutoff = -Infinity } = {}) {
   let closest
   if (typeof key === "function") {
@@ -88,6 +92,7 @@ export function findClosestLT(array, desired, { key, cutoff = -Infinity } = {}) 
   return closest
 }
 
+// @ts-ignore
 export function findClosestLTE(array, desired, { key, cutoff = -Infinity } = {}) {
   let closest
   if (typeof key === "function") {
@@ -118,6 +123,7 @@ export function findClosestLTE(array, desired, { key, cutoff = -Infinity } = {})
   return closest
 }
 
+// @ts-ignore
 export function findClosestGT(array, desired, { key, cutoff = Infinity } = {}) {
   let closest
   if (typeof key === "function") {
@@ -148,6 +154,7 @@ export function findClosestGT(array, desired, { key, cutoff = Infinity } = {}) {
   return closest
 }
 
+// @ts-ignore
 export function findClosestGTE(array, desired, { key, cutoff = Infinity } = {}) {
   let closest
   if (typeof key === "function") {
@@ -183,15 +190,15 @@ export function findClosestGTE(array, desired, { key, cutoff = Infinity } = {}) 
  * If some values are undefined or null, they will be ignored. If no element is found, returns undefined.
  * If using for strings, need to specify different values for "cutoff" and "comparator".
  *  "~" and "" are good cutoff string values for gt/gte and lt/lte respectively.
- * @template T, V
+ * @template T
  * @param {Array<T>} array
- * @param {V} value The desired value to search for
+ * @param {MyUtil.Comparable} value The desired value to search for
  * @param {Object} options
- * @param {string|number|Function=} options.key
+ * @param {keyof T|MyUtil.Mapper<T, MyUtil.Comparable>=} options.key
  *  If specified, will consider the value for each element's key instead of the element itself.
  *  If a function, called with the element, index and array (same as .map() callback) to produce the value to sort on.
  * @param {string=} options.comparator "diff", "lt", "lte", "gt", "gte", "eq". Default is "diff" which implies T is number.
- * @param {V=} options.cutoff If specified, sets a initial constraint on how close the found value must be.
+ * @param {MyUtil.Comparable=} options.cutoff If specified, sets a initial constraint on how close the found value must be.
  *  If used with lt/lte, value must be greater than or equal to cutoff.
  *  If used with gt/gte, value must be less than or equal to cutoff.
  *  If used with diff, value's difference with desired must be less than or equal to cutoff.
@@ -202,14 +209,19 @@ export function findClosest(array, value, options = {}) {
   const { comparator = "diff" } = options
   switch (comparator) {
     case "lt":
+      // @ts-ignore Doesn't understand options
       return findClosestLT(array, value, options)
     case "lte":
+      // @ts-ignore
       return findClosestLTE(array, value, options)
     case "gt":
+      // @ts-ignore
       return findClosestGT(array, value, options)
     case "gte":
+      // @ts-ignore
       return findClosestGTE(array, value, options)
     case "diff":
+      // @ts-ignore
       return findSmallestDiff(array, value, options)
     case "eq":
       return findEq(array, value, options)
@@ -220,13 +232,13 @@ export function findClosest(array, value, options = {}) {
 
 /**
  * Find the minimum value in an array. undefined or null values are ignored.
- * @template T, V
+ * @template T
  * @param {Array<T>} array
  * @param {Object} $1
- * @param {string|Function=} $1.key Specifies an alternative to using each element as the value.
+ * @param {keyof T|MyUtil.Mapper<T, MyUtil.Comparable>=} $1.key Specifies an alternative to using each element as the value.
  *  If string, then accesses each element at that key to get value.
  *  If function, then calls the callback on each element to get value.
- * @param {V=} $1.cutoff Only values below cutoff will be considered.
+ * @param {MyUtil.Comparable=} $1.cutoff Only values below cutoff will be considered.
  * @returns {T|undefined}
  */
 export function findMin(array, { key, cutoff = Infinity } = {}) {
@@ -245,6 +257,7 @@ export function findMin(array, { key, cutoff = Infinity } = {}) {
       const value = element[key]
       if (value < cutoff) {
         closest = element
+        // @ts-ignore Assume value is Comparable since passed check
         cutoff = value
       }
     }
@@ -252,6 +265,7 @@ export function findMin(array, { key, cutoff = Infinity } = {}) {
     for (const value of array) {
       if (value < cutoff) {
         closest = value
+        // @ts-ignore Assume value is Comparable since passed check
         cutoff = value
       }
     }
@@ -261,13 +275,13 @@ export function findMin(array, { key, cutoff = Infinity } = {}) {
 
 /**
  * Find the maximum value in an array. undefined or null values are ignored.
- * @template T, V
+ * @template T
  * @param {Array<T>} array
  * @param {Object} $1
- * @param {string|Function=} $1.key Specifies an alternative to using each element as the value.
+ * @param {keyof T|MyUtil.Mapper<T, MyUtil.Comparable>=} $1.key Specifies an alternative to using each element as the value.
  *  If string, then accesses each element at that key to get value.
  *  If function, then calls the callback on each element to get value.
- * @param {V=} $1.cutoff Only values above cutoff will be considered.
+ * @param {MyUtil.Comparable=} $1.cutoff Only values above cutoff will be considered.
  * @returns {T|undefined}
  */
 export function findMax(array, { key, cutoff = -Infinity } = {}) {
@@ -286,6 +300,7 @@ export function findMax(array, { key, cutoff = -Infinity } = {}) {
       const value = element[key]
       if (value > cutoff) {
         closest = element
+        // @ts-ignore Assume value is Comparable since passed check
         cutoff = value
       }
     }
@@ -293,6 +308,7 @@ export function findMax(array, { key, cutoff = -Infinity } = {}) {
     for (const value of array) {
       if (value > cutoff) {
         closest = value
+        // @ts-ignore Assume value is Comparable since passed check
         cutoff = value
       }
     }
@@ -306,7 +322,7 @@ export function findMax(array, { key, cutoff = -Infinity } = {}) {
  * @template T
  * @param {Array<T>} array
  * @param {Object} $1
- * @param {string|Function=} $1.key Specifies an alternative to using each element as the value.
+ * @param {keyof T|MyUtil.Mapper<T>=} $1.key Specifies an alternative to using each element as the value.
  *  If string, then accesses each element at that key to get value.
  *  If function, then calls the callback on each element to get value.
  * @param {number=} $1.from Numeric index to start from: inclusive, defaults to `0`
@@ -315,7 +331,7 @@ export function findMax(array, { key, cutoff = -Infinity } = {}) {
  * @param {boolean=} $1.reverse If true, looks through the array in reverse. Default is false.
  *  When true, findTruthy() will still start from "from" and end at "to"/"until".
  *  When true, changes the default values of "from", "until", "to" to `array.length - 1`, `-1`, `0`.
- * @returns {T}
+ * @returns {T|undefined}
  */
 export function findTruthy(
   array,

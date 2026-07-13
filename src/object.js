@@ -10,7 +10,7 @@ export function isObject(thing) {
 /**
  * Creates a new object with values created by calling callback on each of argument's values.
  * @param {Object} object
- * @param {Function} callback (value, key, object) => newValue
+ * @param {MyUtil.ObjectMapper} callback
  *  Note if not changing value, should return value.
  * @returns {Object}
  */
@@ -26,7 +26,7 @@ export function mapValues(object, callback) {
 /**
  * Mutates the passed in object by calling callback on each of its values.
  * @param {Object} object
- * @param {Function} callback (value, key, object) => newValue
+ * @param {MyUtil.ObjectMapper} callback
  *  Note if not changing value, should return value.
  * @returns {Object}
  */
@@ -57,8 +57,9 @@ export function deleteUndefinedValues(object) {
 
 /**
  * Creates a function that accesses an object's value at key.
- * @param {string} key
- * @returns {Function}
+ * @template T
+ * @param {keyof T} key
+ * @returns {(_: T) => T[keyof T]}
  */
 export function via(key) {
   return (object) => object[key]
@@ -67,8 +68,9 @@ export function via(key) {
 /**
  * Creates a function that checks if the passed object contains the initial template.
  * This means for each key in the template, the passed object has the same (===) value.
- * @param {Object} template
- * @returns {Function}
+ * @template T
+ * @param {Partial<T>} template
+ * @returns {(_: T) => boolean}
  */
 export function like(template) {
   const keys = Object.keys(template)
@@ -92,6 +94,7 @@ export function like(template) {
  */
 export function deepCopy(source) {
   if (Array.isArray(source)) {
+    // @ts-ignore Doesn't understand returned as T
     return source.map(deepCopy)
   }
   if (isObject(source)) {

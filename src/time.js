@@ -33,8 +33,8 @@ export function setNow(callback = undefined) {
  * @param {Date=} $1.dateInstance Alternative to specifying timestamp that is a Date instance.
  *  This can be used to specify UTC: `getEasternTime({ dateInstance: new Date(utc) })`.
  * @param {boolean=} $1.floorMinute If true, floors to the nearest minute. If false, floors to the nearest second (default).
- * @param {string=} $1.timeZone Time zone to use instead of Eastern time. A falsy, not-undefined value corresponds to local time.
- * @returns {Object} { timestamp, date: YYYY-MM-DD, time: HH:mm:ss }
+ * @param {string|boolean=} $1.timeZone Time zone to use instead of Eastern time. A falsy, not-undefined value corresponds to local time.
+ * @returns {{timestamp: number, date: string, time: string|undefined}} { timestamp, date: YYYY-MM-DD, time: HH:mm:ss }
  *  If invalid timestamp or dateInstance specified: { timestamp: NaN|Infinity, date: "Invalid date", time: undefined }
  */
 export function getEasternTime({
@@ -50,6 +50,7 @@ export function getEasternTime({
   }
   const flooredDateInstance = new Date(timestamp * 1000)
   // 'en-CA' (English - Canada) formats dates as YYYY-MM-DD and times in 24-hour format by default
+  // @ts-ignore Doesn't understand call signature
   const string = flooredDateInstance.toLocaleString("en-CA", {
     ...(timeZone ? { timeZone } : {}),
     hour12: false,
@@ -71,8 +72,8 @@ export function getEasternTime({
  * @param {Date=} $1.dateInstance Alternative to specifying timestamp that is a Date instance.
  *  This can be used to specify UTC: `getEasternTime({ dateInstance: new Date(utc) })`.
  * @param {boolean=} $1.floorMinute If true, floors to the nearest minute. If false, floors to the nearest second.
- * @param {string=} $1.timeZone Time zone to use instead of local time. A falsy value corresponds to local time (default) .
- * @returns {Object} { timestamp, date: YYYY-MM-DD, time: HH:mm:ss }
+ * @param {string|boolean=} $1.timeZone Time zone to use instead of local time. A falsy value corresponds to local time (default) .
+ * @returns {{timestamp: number, date: string, time: string|undefined}} { timestamp, date: YYYY-MM-DD, time: HH:mm:ss }
  *  If invalid timestamp or dateInstance specified: { timestamp: NaN|Infinity, date: "Invalid date", time: undefined }
  */
 export function getLocalTime({ timestamp, dateInstance, floorMinute, timeZone = false } = {}) {
@@ -103,7 +104,7 @@ export function today() {
 /**
  * Get the day of the week index from a YYYY-MM-DD string.
  * @param {string=} string YYYY-MM-DD
- * @returns {string} 0, 1, 2, 3, 4, 5, 6; 0 is Sunday and, 1 is Monday, ... 6 is Saturday
+ * @returns {number} 0, 1, 2, 3, 4, 5, 6; 0 is Sunday and, 1 is Monday, ... 6 is Saturday
  */
 export function getDayIndexInWeek(string = today()) {
   const [year, month, day] = string.split("-").map(Number)
@@ -187,7 +188,7 @@ export function isUTCString(string) {
  * Would not validate timestamps set very far into the future.
  * @param {number} ts
  * @param {Object} $1
- * @param {number} $1.max Maximum value for timestamp to allow - default is up to ~2286-11-20; this allows catching ms timestamps
+ * @param {number=} $1.max Maximum value for timestamp to allow - default is up to ~2286-11-20; this allows catching ms timestamps
  * @returns {boolean}
  */
 export function isUnixTimestamp(ts, { max = 9999999999 } = {}) {
@@ -198,8 +199,8 @@ export function isUnixTimestamp(ts, { max = 9999999999 } = {}) {
  * Add an amount of time to a time string.
  * @param {string} timeString HH:mm:ss or HH:mm
  * @param {Object} $1
- * @param {number} $1.hours Hours to add to time string
- * @param {number} $1.minutes Minutes to add to time string
+ * @param {number=} $1.hours Hours to add to time string
+ * @param {number=} $1.minutes Minutes to add to time string
  * @returns {string} HH:mm:ss
  */
 export function addTime(timeString, { minutes = 0, hours = 0 } = {}) {
@@ -227,9 +228,9 @@ const MINUTES_IN_DAY = 24 * 60
  * @param {string} start HH:mm:ss or HH:mm
  * @param {string} end HH:mm:ss or HH:mm
  * @param {Object} $1
- * @param {number} $1.hours Hours to add to get next time in range. Default 0
- * @param {number} $1.minutes Minutes to add to get next time in range. Default 1
- * @returns {Array} times in HH:mm:ss
+ * @param {number=} $1.hours Hours to add to get next time in range. Default 0
+ * @param {number=} $1.minutes Minutes to add to get next time in range. Default 1
+ * @returns {Array<string>} times in HH:mm:ss
  */
 export function getTimeRange(start, end, { hours = 0, minutes = 1 } = {}) {
   // coerce start and end to seconds
@@ -251,7 +252,7 @@ export function getTimeRange(start, end, { hours = 0, minutes = 1 } = {}) {
  * Adds a number of days to a date string.
  * @param {string} dateString YYYY-MM-DD
  * @param {Object} $1
- * @param {number} $1.days
+ * @param {number=} $1.days
  * @returns {string}
  */
 export function addDays(dateString, { days = 0 } = {}) {
@@ -265,7 +266,9 @@ export function addDays(dateString, { days = 0 } = {}) {
  * Get all dates between two dates, with limit.
  * @param {string} start YYYY-MM-DD
  * @param {string} end YYYY-MM-DD
- * @returns {Array}
+ * @param {Object} $1
+ * @param {number=} $1.limit
+ * @returns {Array<string>}
  */
 export function getDateRange(start, end, { limit = 1000 } = {}) {
   const dates = []

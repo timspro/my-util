@@ -8,11 +8,13 @@ export class PromiseAllError extends Error {}
  * Calls a function immediately and then every X milliseconds until the function does not return undefined, null or false.
  * Note that other falsy values such as 0 or "" or NaN will resolve and be returned.
  * This will never resolve if callback always returns undefined, null, or false.
- * @param {number} ms Milliseconds to wait between invocations
- * @param {boolean|number=} wait If true, waits before initially calling the callback. If a number, waits that many milliseconds.
- * @param {number=} attempts If a number, limits to that many invocations of callback before throwing a PollError.
- * @param {Function} callback The argument is the number of times the callback has been called previously.
- * @returns {Promise<any>} The result of the callback
+ * @template R
+ * @param {Object} $1
+ * @param {number} $1.ms Milliseconds to wait between invocations
+ * @param {boolean|number=} $1.wait If true, waits before initially calling the callback. If a number, waits that many milliseconds.
+ * @param {number=} $1.attempts If a number, limits to that many invocations of callback before throwing a PollError.
+ * @param {(attemptIndex: number) => R|Promise<R>} callback The argument is the number of times the callback has been called previously.
+ * @returns {Promise<R>} The result of the callback
  */
 export function poll({ ms, wait = false, attempts = undefined }, callback) {
   return new Promise((resolve, reject) => {
@@ -66,11 +68,13 @@ export async function sleep(ms) {
  *  - "returned": The "value" property for each "result" object where the "status" property has a value of fulfilled.
  *     This is arguably more useful than "values" unless you need to be able to index into the array based on the index of the promise.
  *  - "errors": The "reason" property for each "result" object that did not have a status of "fulfilled".
+ * @template T
+ * @template R
  * @param {Object} $1
- * @param {Iterable} $1.array
- * @param {Iterable=} $1.iterable An alternative, more accurate property name for specifying "array"
+ * @param {Iterable<T>=} $1.array
+ * @param {Iterable<T>=} $1.iterable An alternative, more accurate property name for specifying "array"
  * @param {number=} $1.limit The number of calls to do in parallel. If not provided, each call is done in parallel.
- * @param {Function=} $1.limiter A function awaited after a group of parallel calls is processed.
+ * @param {(count: number) => any=} $1.limiter A function awaited after a group of parallel calls is processed.
  *  It is called with the number of parallel calls processed. Could be as simple as `() => sleep(10000)` if you wanted to wait 10 seconds between.
  * @param {boolean=} $1.flatten If true, flattens "values" and "returned" before returning; useful if promises return arrays.
  *  `null` and `undefined` return values are passed through.
@@ -78,22 +82,25 @@ export async function sleep(ms) {
  *  If false (default), will process all elements in the array (like Promise.allSettled()).
  * @param {boolean=} $1.throws If true, will collect error messages, if any, together into one PromiseAllError object and throw it.
  *  Sets the PromiseAllError's stack from one of the collected errors, if available.
- * @param {Function} callback Default is identity function to enable passing promises as "array".
- * @returns {Promise<{results: Array, values: Array, returned: Array, errors: Array}>}
+ * @param {MyUtil.Mapper<T, R>} callback Default is identity function to enable passing promises as "array".
+ * @returns {Promise<{results: Array<PromiseSettledResult<R>>, values: Array<R|undefined>, returned: Array<R>, errors: Array<any>}>}
  */
 export async function allSettled(
   { array, iterable = array, limit, limiter, flatten = false, abort = false, throws = false },
+  // @ts-ignore Doesn't understand that R can be T
   callback = (promise) => promise
 ) {
   const results = []
   let returned = []
   let values = []
   const errors = []
+  // @ts-ignore Assume iterable exists
   const chunked = chunk(iterable, limit)
   for (const elements of chunked) {
     const promises = elements.map(callback)
     const chunkResults = await Promise.allSettled(promises)
     for (const result of chunkResults) {
+      // @ts-ignore Add undefined values if rejected
       const { value, status, reason } = result
       results.push(result)
       values.push(value)
@@ -121,6 +128,7 @@ export async function allSettled(
     values = values?.flat()
     returned = returned?.flat()
   }
+  // @ts-ignore Doesn't understand "returned" as R[]
   return { values, returned, errors, results }
 }
 
@@ -128,10 +136,11 @@ export async function allSettled(
  * Parallelize awaiting an array of promises using `Promise.allSettled()` but throw if an error, similar to Promise.all().
  * Also like Promise.all(), returns the return values of passed promises as an array.
  * If multiple errors, joins error messages together and tries to keep a stack trace from the first error with a trace.
- * @param {Array<Promise>} promises
+ * @template T
+ * @param {Array<Promise<T>>} promises
  * @param {Object} $1
  * @param {boolean=} $1.flatten If true, flattens values before returning; useful if promises return arrays.
- * @returns {Promise<Array>}
+ * @returns {Promise<Array<T>>}
  */
 export async function allPatiently(promises, { flatten } = {}) {
   return (await allSettled({ iterable: promises, flatten, throws: true })).returned
@@ -142,8 +151,8 @@ export async function allPatiently(promises, { flatten } = {}) {
  * Once the limit is reached, waits until the start of a new interval before returning.
  * @param {Object} $1
  * @param {number} $1.limit The maximum number of elements to be processed in the interval
- * @param {Function=} $1.interval The length of the interval in milliseconds. Default is one minute.
- * @returns {Function} Returned function expects to be called with the number of elements added since last call.
+ * @param {number=} $1.interval The length of the interval in milliseconds. Default is one minute.
+ * @returns {(added: number) => Promise<void>} Returned function expects to be called with the number of elements added since last call.
  */
 export function intervalLimiter({ limit, interval = 1000 * 60 }) {
   let count = 0
@@ -181,12 +190,14 @@ export function alert(result) {
  * This is useful because usually you want to set a limit to the number of parallel requests possible at once.
  * To maintain parity with allSettled(), this function provides both "values" and "returned" as output but they are the same array.
  * Since this function throws on the first error (same behavior as Promise.all()), there isn't a situation where this function returns but an individual call errored.
+ * @template T
+ * @template R
  * @param {Object} $1
- * @param {Array} $1.array
+ * @param {Array<T>} $1.array
  * @param {number=} $1.limit If not provided, each call is done in parallel.
  * @param {boolean=} $1.flatten Flattens values before returning; useful if promises return arrays
- * @param {Function} callback
- * @returns {Promise<{values: Array, returned: Array}>}
+ * @param {MyUtil.Mapper<T, Promise<R>>} callback
+ * @returns {Promise<{values: Array<R>, returned: Array<R>}>}
  */
 export async function throwFirstReject({ array, limit, flatten = false }, callback) {
   let values = []

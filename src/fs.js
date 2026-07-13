@@ -32,6 +32,7 @@ export async function readJSON(path) {
 export async function writeJSON(path, object, { indent = 2 } = {}) {
   let data = JSON.stringify(object, undefined, indent)
   if (path.endsWith(".gz")) {
+    // @ts-ignore "data" can be Buffer or string
     data = await gzip(data)
   }
   await writeFile(path, data)
@@ -58,6 +59,7 @@ export async function pathExists(path, { maxAge = undefined, throws = false } = 
     return stats
   } catch (error) {
     // if caller wants all errors or the error isn't related to the path not being found
+    // @ts-ignore Warning about error.code
     if (throws || error.code !== "ENOENT") {
       throw error
     }

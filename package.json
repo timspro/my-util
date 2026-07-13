@@ -19,10 +19,13 @@
     "./time": "./src/time.js"
   },
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc -p ."
   },
   "devDependencies": {
     "@tim-code/eslint-config": "^2.1.0",
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   },
   "publishConfig": {

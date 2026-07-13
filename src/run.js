@@ -3,9 +3,11 @@ import { pathToFileURL } from "url"
 /**
  * Basically allows the file where this is called from to be run as a script.
  * @param {string} importMetaUrl Intended to be literally `import.meta.url`
- * @param {array} args Names for command line args that will be used to name keys in the object passed to callback
- * @param {Function} callback A (wrapper) function to execute the file.
- * @returns The result of the callback
+ * @param {string[]} args Names for command line args that will be used to name keys in the object passed to callback
+ * @param {(parameter: Object) => Promise<{ body: string }>} callback A (wrapper) function to execute the file.
+ *  The properties of the argument will be the values of args.
+ *  Outputs the "body" value of result as formatted JSON.
+ * @returns {Promise<void>|undefined} The result of the callback
  */
 export function runnable(importMetaUrl, args, callback) {
   if (importMetaUrl === pathToFileURL(process.argv[1]).href) {

@@ -2,10 +2,11 @@
  * Converts an iterable into an array of arrays, where each subarray has a maximum size of chunkSize.
  * Note the last subarray may have a length less than chunkSize.
  * If the iterable has no elements, returns an empty array since there are no chunks.
- * @param {Iterable} iterable
+ * @template T
+ * @param {Iterable<T>} iterable
  * @param {number=} chunkSize If not provided, returns an array consisting of one chunk, which has all the elements of input iterable.
  *  This has the same effect as passing a chunk size that is greater than the number of elements in the iterable.
- * @returns {Array<Array>}
+ * @returns {Array<Array<T>>}
  */
 export function chunk(iterable, chunkSize = Infinity) {
   if (chunkSize !== Infinity && (chunkSize <= 0 || !Number.isInteger(chunkSize))) {
@@ -28,12 +29,13 @@ export function chunk(iterable, chunkSize = Infinity) {
 
 /**
  * Returns all unique elements in an array, or alternatively by checking a key's value or function's result.
- * @param {Array} array
+ * @template T
+ * @param {Array<T>} array
  * @param {Object} $1
- * @param {string|number|Function=} $1.key
+ * @param {keyof T|MyUtil.Mapper<T>=} $1.key
  *  If a function, calls the provided function on an element to get the value to check for uniqueness.
  *  If a string or number, checks each element's value at key for uniqueness.
- * @returns {Array}
+ * @returns {Array<T>}
  */
 export function unique(array, { key } = {}) {
   const seen = new Set()
@@ -65,13 +67,14 @@ export function unique(array, { key } = {}) {
  * Returns groups of duplicate elements in an array.
  * Each group is an array of elements that share the same key or callback result.
  * Only groups with more than one element are returned. Returns an empty array if no duplicates.
- * @param {Array} array
+ * @template T
+ * @param {Array<T>} array
  * @param {Object} $1
- * @param {string|number|Function=} $1.key
+ * @param {keyof T|MyUtil.Mapper<T>=} $1.key
  *  If a function, calls the provided function on an element to get the value for grouping.
  *  If a string or number, uses element[key].
  *  If omitted, compares elements directly.
- * @returns {Array<Array>}
+ * @returns {Array<Array<T>>}
  */
 export function duplicates(array, { key } = {}) {
   const groups = new Map()
@@ -121,17 +124,18 @@ function compareUndefinedNull(a, b) {
 /**
  * Returns an "ascending" comparator, via "<", to be used to sort an array.
  * Undefined or null values are always sorted to the end.
- * @param {string|number|Function=} transform
+ * @template T
+ * @param {keyof T|((_: T) => MyUtil.Comparable)=} transform
  *  If a function, calls the provided function on an element to get the value to sort on.
  *  If a string or number, treats transform as a key and sorts on each element's value at key.
- * @returns {Function}
+ * @returns {MyUtil.Comparator<T>}
  */
 export function ascending(transform) {
   if (typeof transform === "function") {
     return (a, b) => {
-      a = transform(a)
-      b = transform(b)
-      return compareUndefinedNull(a, b) ?? (a < b ? -1 : b < a ? 1 : 0)
+      const ra = transform(a)
+      const rb = transform(b)
+      return compareUndefinedNull(ra, rb) ?? (ra < rb ? -1 : rb < ra ? 1 : 0)
     }
   }
   if (typeof transform === "string" || typeof transform === "number") {
@@ -150,17 +154,18 @@ export function ascending(transform) {
 /**
  * Returns a "descending" comparator, via ">", to be used to sort an array.
  * Undefined or null values are always sorted to the end.
- * @param {string|number|Function=} transform
+ * @template T
+ * @param {keyof T|((_: T) => MyUtil.Comparable)=} transform
  *  If a function, calls the provided function on an element to get the value to sort on.
  *  If a string or number, treats transform as a key and sorts on each element's value at key.
- * @returns {Function}
+ * @returns {MyUtil.Comparator<T>}
  */
 export function descending(transform) {
   if (typeof transform === "function") {
     return (a, b) => {
-      a = transform(a)
-      b = transform(b)
-      return compareUndefinedNull(a, b) ?? (a > b ? -1 : b > a ? 1 : 0)
+      const ra = transform(a)
+      const rb = transform(b)
+      return compareUndefinedNull(ra, rb) ?? (ra > rb ? -1 : rb > ra ? 1 : 0)
     }
   }
   if (typeof transform === "string" || typeof transform === "number") {
@@ -208,17 +213,18 @@ function naturalCompare(a, b) {
  * This allows numbers to be sorted according to how large they are (i.e 100 after 11),
  *  while allowing strings to be sorted alphabetically.
  * Empty string or undefined or null values are always sorted to the end.
- * @param {string|number|Function=} transform
+ * @template T
+ * @param {keyof T|((_: T) => string)=} transform
  *  If a function, calls the provided function on an element to get the value to sort on.
  *  If a string or number, treats transform as a key and sorts on each element's value at key.
- * @returns {Function}
+ * @returns {MyUtil.Comparator<T>}
  */
 export function naturalAsc(transform) {
   if (typeof transform === "function") {
     return (a, b) => {
-      a = transform(a)
-      b = transform(b)
-      return compareUndefinedNullEmpty(a, b) ?? naturalCompare(a, b)
+      const ra = transform(a)
+      const rb = transform(b)
+      return compareUndefinedNullEmpty(ra, rb) ?? naturalCompare(ra, rb)
     }
   }
   if (typeof transform === "string" || typeof transform === "number") {
@@ -236,17 +242,18 @@ export function naturalAsc(transform) {
  * Notably this sort allow numbers to be sorted according to how large they are (i.e 100 after 11),
  *  while allowing strings to be sorted alphabetically.
  * Empty string or undefined or null values are always sorted to the end.
- * @param {string|number|Function=} transform
+ * @template T
+ * @param {keyof T|((_: T) => string)=} transform
  *  If a function, calls the provided function on an element to get the value to sort on.
  *  If a string or number, treats transform as a key and sorts on each element's value at key.
- * @returns {Function}
+ * @returns {MyUtil.Comparator<T>}
  */
 export function naturalDesc(transform) {
   if (typeof transform === "function") {
     return (a, b) => {
-      b = transform(b)
-      a = transform(a)
-      return compareUndefinedNullEmpty(a, b) ?? naturalCompare(b, a)
+      const rb = transform(b)
+      const ra = transform(a)
+      return compareUndefinedNullEmpty(ra, rb) ?? naturalCompare(rb, ra)
     }
   }
   if (typeof transform === "string" || typeof transform === "number") {
@@ -262,8 +269,9 @@ export function naturalDesc(transform) {
 
 /**
  * Combines multiple ascending and descending comparators.
- * @param  {...Function} comparators
- * @returns {Function}
+ * @template T
+ * @param  {...MyUtil.Comparator<T>} comparators
+ * @returns {MyUtil.Comparator<T>}
  */
 export function multilevel(...comparators) {
   return (a, b) => {
@@ -312,7 +320,7 @@ function maxHeapify(heap, compare, length) {
  * @param {Array<T>} array
  * @param {Object} $1
  * @param {number} $1.N Number of elements to return; must be a nonnegative integer
- * @param {Function=} $1.compare Sort function. Default is ascending sort.
+ * @param {MyUtil.Comparator<T>=} $1.compare Sort function. Default is ascending sort.
  * @param {boolean=} $1.unsorted If true, returns the final result in heap order, not sorted order, as an optimization.
  *  Default is false.
  * @param {boolean=} $1.force If true, will force heap-based method for small N instead of more efficient "normal" way.
@@ -365,12 +373,14 @@ export function sortN(
  * Returns a comparator to be used with .sort().
  * Elements that equal (===) the passed value will be sorted to the bottom of the array.
  * Other elements will have the the same order as before.
- * @param {any} value
+ * @template T
+ * @template V
+ * @param {V} value
  * @param {Object} $1
- * @param {string|number|Function=} $1.key
+ * @param {keyof T|((_: T) => V)=} $1.key
  *  If a function, calls the provided function on an element to get the value to check when sorting.
  *  If a string or number, checks each element's value at key when sorting. A missing key is considered equivalent to undefined.
- * @returns {Function}
+ * @returns {MyUtil.Comparator<T>}
  */
 export function toBottom(value, { key } = {}) {
   if (typeof key === "function") {
@@ -401,12 +411,14 @@ export function toBottom(value, { key } = {}) {
     }
   }
   return (a, b) => {
+    // @ts-ignore a, b and value do not need to be same type
     if (a === value) {
       if (b === value) {
         return 0
       }
       return 1
     }
+    // @ts-ignore
     if (b === value) {
       return -1
     }
@@ -418,12 +430,14 @@ export function toBottom(value, { key } = {}) {
  * Returns a comparator to be used with .sort().
  * Elements that equal (===) the passed value will be sorted to the top of the array.
  * Other elements will have the the same order as before.
- * @param {any} value
+ * @template T
+ * @template V
+ * @param {V} value
  * @param {Object} $1
- * @param {string|number|Function=} $1.key
+ * @param {keyof T|((_: T) => V)=} $1.key
  *  If a function, calls the provided function on an element to get the value to check when sorting.
  *  If a string or number, checks each element's value at key when sorting. A missing key is considered equivalent to undefined.
- * @returns {Function}
+ * @returns {MyUtil.Comparator<T>}
  */
 export function toTop(value, { key } = {}) {
   if (typeof key === "function") {
@@ -454,12 +468,14 @@ export function toTop(value, { key } = {}) {
     }
   }
   return (a, b) => {
+    // @ts-ignore a, b and value do not need to be same type
     if (a === value) {
       if (b === value) {
         return 0
       }
       return -1
     }
+    // @ts-ignore
     if (b === value) {
       return 1
     }

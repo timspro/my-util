@@ -16,7 +16,7 @@ export function mod(number, modulus) {
  * This function, given an "x" value, returns a "y" value that is on the same line as the first two points.
  * @param {[number, number]} point1
  * @param {[number, number]} point2
- * @returns {Function}
+ * @returns {(x: number) => number}
  */
 export function line([x1, y1], [x2, y2]) {
   const m = (y2 - y1) / (x2 - x1)
@@ -30,7 +30,7 @@ export function line([x1, y1], [x2, y2]) {
  * @template T
  * @param {Array<T>} array
  * @param {Object} $1
- * @param {string|number|Function=} $1.key Can specify a key of the object or a function.
+ * @param {keyof T|MyUtil.Mapper<T, number>=} $1.key Can specify a key of the object or a function.
  * @returns {number}
  */
 export function sum(array, { key } = {}) {
@@ -41,10 +41,12 @@ export function sum(array, { key } = {}) {
     }
   } else if (typeof key === "string" || typeof key === "number") {
     for (let i = 0; i < array.length; i++) {
+      // @ts-ignore Assuming value for key is a number
       total += array[i][key]
     }
   } else {
     for (let i = 0; i < array.length; i++) {
+      // @ts-ignore Assuming array is of numbers
       total += array[i]
     }
   }
@@ -56,7 +58,7 @@ export function sum(array, { key } = {}) {
  * @template T
  * @param {Array<T>} array
  * @param {Object} $1
- * @param {string|number|Function=} $1.key Can specify a key of the object or a function.
+ * @param {keyof T|MyUtil.Mapper<T, number>=} $1.key Can specify a key of the object or a function.
  * @returns {number}
  * @throws {Error} If the array is empty.
  */
@@ -72,7 +74,7 @@ export function average(array, { key } = {}) {
  * @template T
  * @param {Array<T>} array
  * @param {Object} $1
- * @param {string|number|Function=} $1.key Can specify a key of the object or a function.
+ * @param {keyof T|MyUtil.Mapper<T, number>=} $1.key Can specify a key of the object or a function.
  * @returns {number}
  * @throws {Error} If the array is empty.
  */
@@ -91,12 +93,14 @@ export function variance(array, { key } = {}) {
   } else if (typeof key === "string" || typeof key === "number") {
     for (let i = 0; i < array.length; i++) {
       const value = array[i][key]
+      // @ts-ignore Assuming value for key is a number
       const diff = value - avg
       total += diff * diff
     }
   } else {
     for (let i = 0; i < array.length; i++) {
       const value = array[i]
+      // @ts-ignore Assuming array is of numbers
       const diff = value - avg
       total += diff * diff
     }
@@ -129,7 +133,7 @@ export function formatPlus(number, { zero = false } = {}) {
 /**
  * Create an array of numbers progressing from start up to, but not including, end.
  * @param {number} start
- * @param {number=} end
+ * @param {number} end
  * @param {number=} increment
  * @returns {number[]}
  */
@@ -147,7 +151,7 @@ export function range(start, end, increment = 1) {
 /**
  * Create an array of numbers progressing from start up to and including end.
  * @param {number} start
- * @param {number=} end
+ * @param {number} end
  * @param {number=} increment
  * @returns {number[]}
  */
@@ -179,10 +183,12 @@ export function isNumber(number) {
  * @param {T[]} array
  * @param {Object} $1
  * @param {number} $1.N How many quantiles
- * @param {string|number|Function=} $1.key Can specify a key of the object to sort on or a function.
- * @param {Function=} $1.method Method to use to choose which element when the percentile index is a fractional value.
+ * @param {keyof T|((_: T) => MyUtil.Comparable)=} $1.key Can specify a key of the object to sort on or a function.
+ * @param {((x: number) => number)=} $1.method
+ *  Method to use to choose which element when the percentile index is a fractional value.
  *  Default is Math.round.
- * @param {Function=} $.labeller Function that returns a quantile label given a fractional value (i.e. 33.3...).
+ * @param {((x: number) => number)=} $1.labeller
+ *  Function that returns a quantile label given a fractional value (i.e. 33.3...).
  *  Default is Math.round.
  * @returns {Object|undefined} Returns undefined is array is empty
  */
