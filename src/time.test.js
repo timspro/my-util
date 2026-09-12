@@ -17,12 +17,13 @@ import {
   isUTCString,
   isUnixTimestamp,
   now,
+  resetNow,
   setNow,
   today,
 } from "./time.js"
 
 // Exported functions and variables:
-// now, setNow, getEasternTime, getLocalTime, getUnixTimestamp, today, getDayIndexInWeek, getMinute,
+// now, setNow, resetNow, getEasternTime, getLocalTime, getUnixTimestamp, today, getDayIndexInWeek, getMinute,
 // isDateString, isTimeString, isDateTimeString, isUTCString, isUnixTimestamp,
 // addTime, getTimeRange, addDays, getDateRange, getStartOfWeek, convertToSeconds
 
@@ -51,6 +52,24 @@ describe("now/setNow", () => {
     const t = now()
     expect(t).toBeInstanceOf(Date)
     // Allow a small delta from system clock
+    expect(Math.abs(t.getTime() - Date.now())).toBeLessThan(10)
+  })
+
+  test("a destructured/aliased reference to now() still reflects later setNow() calls", () => {
+    // now() is a stable function reference (unlike a plain exported `let` binding), so aliasing
+    // it - e.g. via destructuring into a new object, or passing it around - must not freeze it
+    // to whatever setNow() callback was active at alias time.
+    const clock = { now }
+    const fixed = new Date("2024-01-02T03:04:05.678Z")
+    setNow(() => fixed)
+    expect(clock.now()).toBe(fixed)
+  })
+
+  test("resetNow() restores now() to the system time source, same as setNow()", () => {
+    setNow(() => new Date("1999-12-31T23:59:59.999Z"))
+    resetNow()
+    const t = now()
+    expect(t).toBeInstanceOf(Date)
     expect(Math.abs(t.getTime() - Date.now())).toBeLessThan(10)
   })
 })
@@ -500,12 +519,39 @@ describe("getTimeRange", () => {
     expect(getTimeRange("12:00", "12:02")).toEqual(["12:00:00", "12:01:00", "12:02:00"])
   })
 
-  // ISSUE: getTimeRange allows a zero step, which would otherwise loop forever; it's capped internally at 1440 iterations.
-  test("caps the number of results at MINUTES_IN_DAY when step is zero", () => {
-    const result = getTimeRange("12:00:00", "12:00:00", { hours: 0, minutes: 0 })
-    expect(result.length).toBe(24 * 60)
-    expect(result[0]).toBe("12:00:00")
-    expect(result[result.length - 1]).toBe("12:00:00")
+  test("throws instead of looping forever when the step is zero", () => {
+    expect(() => getTimeRange("12:00:00", "12:00:00", { hours: 0, minutes: 0 })).toThrow(
+      "adding 0h 0m caused the time range to cycle back to the start time (12:00:00)"
+    )
+  })
+
+  test("throws instead of looping forever when the step evenly divides 24 hours", () => {
+    expect(() => getTimeRange("12:00:00", "12:00:00", { hours: 24, minutes: 0 })).toThrow(
+      /cycle back to the start time/u
+    )
+    // end must stay reachable long enough for the range to complete the full 8h*3 = 24h cycle
+    expect(() => getTimeRange("00:00:00", "20:00:00", { hours: 8, minutes: 0 })).toThrow(
+      /cycle back to the start time/u
+    )
+  })
+
+  test("throws instead of silently wrapping when the range reaches exactly midnight", () => {
+    // Per the documented caveat, this doesn't work across day: stepping one minute past
+    // "23:59:00" wraps to "00:00:00", which is still <= end lexically, so the range would
+    // otherwise loop for (up to) another full day before ever exceeding `end`.
+    expect(() => getTimeRange("23:58:00", "23:59:00")).toThrow(/cycle back to the start time/u)
+  })
+
+  test("does not throw for a normal range that never reaches midnight", () => {
+    expect(() => getTimeRange("23:00:00", "23:05:00")).not.toThrow()
+    expect(getTimeRange("23:00:00", "23:05:00")).toEqual([
+      "23:00:00",
+      "23:01:00",
+      "23:02:00",
+      "23:03:00",
+      "23:04:00",
+      "23:05:00",
+    ])
   })
 })
 
@@ -592,7 +638,6 @@ describe("getDateRange", () => {
     expect(dates[dates.length - 1]).toBe("2025-01-01")
   })
 
-  // ISSUE: getDateRange does not validate that start/end are valid dates, so invalid input may yield unexpected results.
   test("handles invalid date input (returns empty array if start > end lexically)", () => {
     expect(getDateRange("not-a-date", "2024-01-01")).toEqual([])
   })

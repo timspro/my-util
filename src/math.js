@@ -14,6 +14,7 @@ export function mod(number, modulus) {
 /**
  * Given two points, returns a function
  * This function, given an "x" value, returns a "y" value that is on the same line as the first two points.
+ * Does not guard against slope being infinite or indeterminate.
  * @param {[number, number]} point1
  * @param {[number, number]} point2
  * @returns {(x: number) => number}
@@ -109,7 +110,8 @@ export function variance(array, { key } = {}) {
 }
 
 /**
- * Prepend a plus to a number or string if positive.
+ * Prepend a plus to a number if positive.
+ * Also, prepends a plus to a string if the first character isn't already a + or -.
  * @param {number|string} number Or string
  * @param {Object} $1
  * @param {boolean=} $1.zero If true, prepends a plus to zero as well.
@@ -122,7 +124,11 @@ export function formatPlus(number, { zero = false } = {}) {
     }
     return `${number}`
   } else if (typeof number === "string") {
-    if (number === "0" ? zero : number[0] !== "-") {
+    if (number === "0") {
+      if (zero) {
+        return `+${number}`
+      }
+    } else if (number[0] !== "-" && number[0] !== "+") {
       return `+${number}`
     }
     return number
@@ -182,15 +188,18 @@ export function isNumber(number) {
  * @template T
  * @param {T[]} array
  * @param {Object} $1
- * @param {number} $1.N How many quantiles
+ * @param {number} $1.N Determines how many quantiles. There will be N+1 quantile labels returned.
  * @param {keyof T|((_: T) => MyUtil.Comparable)=} $1.key Can specify a key of the object to sort on or a function.
  * @param {((x: number) => number)=} $1.method
  *  Method to use to choose which element when the percentile index is a fractional value.
  *  Default is Math.round.
  * @param {((x: number) => number)=} $1.labeller
- *  Function that returns a quantile label given a fractional value (i.e. 33.3...).
- *  Default is Math.round.
- * @returns {Object|undefined} Returns undefined is array is empty
+ *  Function that returns a unique quantile label given a fractional percentage (i.e. 33.3...) that
+ *  represents the percentage of elements that came before the quantile, assuming the array is large enough.
+ *  Default is Math.round, which only produces unique labels for N <= 100 due to integer rounding.
+ *  If two percentiles map to the same label, the last-set percentile will be used.
+ *    Unless the label is 0, in which case the first-set percentile will be preserved.
+ * @returns {Object|undefined} Returns undefined if array is empty
  */
 export function quantiles(array, { N, key, method = Math.round, labeller = Math.round }) {
   if (!(N > 0) || !Number.isInteger(N)) {
@@ -205,6 +214,9 @@ export function quantiles(array, { N, key, method = Math.round, labeller = Math.
     const percentile = i / N
     const percentileIndex = method(percentile * (sorted.length - 1))
     const label = labeller(i * (100 / N))
+    if (label === 0 && result[label] !== undefined) {
+      continue
+    }
     result[label] = sorted[percentileIndex]
   }
   return result

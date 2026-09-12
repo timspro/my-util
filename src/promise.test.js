@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest"
 
 // Exported API under test:
 // - classes: PollError, PromiseAllError
-// - functions: poll, sleep, allSettled, allPatiently, intervalLimiter, alert, throwFirstReject
+// - functions: poll, sleep, allSettled, allPatiently, intervalLimiter, alert
 
 import {
   alert,
@@ -14,7 +14,6 @@ import {
   PollError,
   PromiseAllError,
   sleep,
-  throwFirstReject,
 } from "./promise.js"
 
 describe("poll", () => {
@@ -67,21 +66,33 @@ describe("poll", () => {
   })
 
   it("waits before first call if wait=true", async () => {
-    const cb = vi.fn().mockReturnValue(1)
-    const promise = poll({ ms: 2, wait: true }, cb)
-    await sleep(3)
-    await expect(promise).resolves.toBe(1)
-    expect(cb).toHaveBeenCalledTimes(1)
+    vi.useFakeTimers()
+    try {
+      const cb = vi.fn().mockReturnValue(1)
+      const promise = poll({ ms: 2, wait: true }, cb)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(cb).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1)
+      await expect(promise).resolves.toBe(1)
+      expect(cb).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it("waits specified ms before first call if wait is a number", async () => {
-    const cb = vi.fn().mockReturnValue(1)
-    const promise = poll({ ms: 2, wait: 5 }, cb)
-    await sleep(4)
-    expect(cb).not.toHaveBeenCalled()
-    await sleep(2)
-    await expect(promise).resolves.toBe(1)
-    expect(cb).toHaveBeenCalledTimes(1)
+    vi.useFakeTimers()
+    try {
+      const cb = vi.fn().mockReturnValue(1)
+      const promise = poll({ ms: 2, wait: 5 }, cb)
+      await vi.advanceTimersByTimeAsync(4)
+      expect(cb).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1)
+      await expect(promise).resolves.toBe(1)
+      expect(cb).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it("rejects with PollError if attempts is reached", async () => {
@@ -106,20 +117,31 @@ describe("poll", () => {
 })
 
 describe("sleep", () => {
-  it("resolves after the specified milliseconds", async () => {
-    const before = Date.now()
-    const promise = sleep(5)
-    await expect(promise).resolves.toBeUndefined()
-    const after = Date.now()
-    expect(after - before).toBeGreaterThanOrEqual(5)
+  it("does not resolve before the specified milliseconds, and does resolve once they elapse", async () => {
+    vi.useFakeTimers()
+    try {
+      let resolved = false
+      sleep(5).then(() => {
+        resolved = true
+      })
+      await vi.advanceTimersByTimeAsync(4)
+      expect(resolved).toBe(false)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(resolved).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
-  it("resolves immediately if ms is negative", async () => {
-    const before = Date.now()
-    const promise = sleep(-10)
-    await expect(promise).resolves.toBeUndefined()
-    const after = Date.now()
-    expect(after - before).toBeLessThan(5)
+  it("resolves immediately if ms is negative, without scheduling a timer", async () => {
+    vi.useFakeTimers()
+    try {
+      const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout")
+      await expect(sleep(-10)).resolves.toBeUndefined()
+      expect(setTimeoutSpy).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 
@@ -275,35 +297,61 @@ describe("allPatiently", () => {
 
 describe("intervalLimiter", () => {
   it("does not delay until limit is reached", async () => {
-    const limiter = intervalLimiter({ limit: 3, interval: 10 })
-    const before = Date.now()
-    await limiter(1)
-    await limiter(1)
-    await limiter(1) // should reach limit here, triggers wait
-    const after = Date.now()
-    expect(after - before).toBeGreaterThanOrEqual(10)
+    vi.useFakeTimers()
+    try {
+      const limiter = intervalLimiter({ limit: 3, interval: 10 })
+      const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout")
+      await limiter(1)
+      await limiter(1)
+      expect(setTimeoutSpy).not.toHaveBeenCalled()
+      let resolved = false
+      limiter(1).then(() => {
+        resolved = true
+      }) // should reach limit here, triggers wait
+      await vi.advanceTimersByTimeAsync(9)
+      expect(resolved).toBe(false)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(resolved).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it("resets count and interval after waiting", async () => {
-    const limiter = intervalLimiter({ limit: 2, interval: 5 })
-    const before = Date.now()
-    await limiter(1)
-    await limiter(1) // triggers wait
-    const afterFirst = Date.now()
-    await limiter(1)
-    await limiter(1) // triggers wait again
-    const afterSecond = Date.now()
-    expect(afterFirst - before).toBeGreaterThanOrEqual(5)
-    expect(afterSecond - afterFirst).toBeGreaterThanOrEqual(5)
+    vi.useFakeTimers()
+    try {
+      const limiter = intervalLimiter({ limit: 2, interval: 5 })
+      await limiter(1)
+      let resolvedFirst = false
+      limiter(1).then(() => {
+        resolvedFirst = true
+      }) // triggers wait
+      await vi.advanceTimersByTimeAsync(4)
+      expect(resolvedFirst).toBe(false)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(resolvedFirst).toBe(true)
+
+      await limiter(1)
+      let resolvedSecond = false
+      limiter(1).then(() => {
+        resolvedSecond = true
+      }) // triggers wait again
+      await vi.advanceTimersByTimeAsync(4)
+      expect(resolvedSecond).toBe(false)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(resolvedSecond).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it("handles added < limit with no delay", async () => {
     const limiter = intervalLimiter({ limit: 10, interval: 5 })
-    const before = Date.now()
+    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout")
     await limiter(3)
     await limiter(3)
-    const after = Date.now()
-    expect(after - before).toBeLessThan(5)
+    expect(setTimeoutSpy).not.toHaveBeenCalled()
+    setTimeoutSpy.mockRestore()
   })
 })
 
@@ -317,48 +365,6 @@ describe("alert", () => {
   it("throws if errors is non-empty", () => {
     const errors = ["fail", "bad"]
     expect(() => alert({ errors })).toThrow(JSON.stringify(errors, undefined, 2))
-  })
-})
-
-describe("throwFirstReject", () => {
-  it("returns values and returned as same array for all fulfilled", async () => {
-    const arr = [1, 2, 3]
-    const cb = (x) => x * 3
-    const result = await throwFirstReject({ array: arr }, cb)
-    expect(result.values).toEqual([3, 6, 9])
-    expect(result.returned).toEqual([3, 6, 9])
-  })
-
-  it("throws on first rejection", async () => {
-    const arr = [1, 2, 3]
-    const cb = (x) => (x === 2 ? Promise.reject("fail") : x)
-    await expect(throwFirstReject({ array: arr }, cb)).rejects.toBe("fail")
-  })
-
-  it("respects limit and processes in chunks", async () => {
-    const arr = [1, 2, 3, 4]
-    const calls = []
-    const cb = (x) => {
-      calls.push(x)
-      return x
-    }
-    const result = await throwFirstReject({ array: arr, limit: 2 }, cb)
-    expect(result.values).toEqual([1, 2, 3, 4])
-    expect(calls).toEqual([1, 2, 3, 4])
-  })
-
-  it("flattens values if flatten=true", async () => {
-    const arr = [1, 2]
-    const cb = (x) => [x, x + 1]
-    const result = await throwFirstReject({ array: arr, flatten: true }, cb)
-    expect(result.values).toEqual([1, 2, 2, 3])
-    expect(result.returned).toEqual([1, 2, 2, 3])
-  })
-
-  it("handles empty array", async () => {
-    const result = await throwFirstReject({ array: [] }, (x) => x)
-    expect(result.values).toEqual([])
-    expect(result.returned).toEqual([])
   })
 })
 

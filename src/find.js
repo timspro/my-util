@@ -1,7 +1,12 @@
 /* eslint-disable complexity */
 
+// These helpers are intentionally not exported: each duplicates the same three-way
+// typeof-key dispatch as a separate loop (instead of one shared accessor + one loop) so the
+// typeof check happens once per call, not once per element. Only findClosest/findMin/findMax/
+// findTruthy are public API; the rest exist to be unit tested directly and used by findClosest.
+
 // @ts-ignore Don't type all these helper functions
-export function findEq(array, desired, { key } = {}) {
+function findEq(array, desired, { key } = {}) {
   if (typeof key === "function") {
     for (let i = 0; i < array.length; i++) {
       const element = array[i]
@@ -28,14 +33,14 @@ export function findEq(array, desired, { key } = {}) {
 }
 
 // @ts-ignore
-export function findSmallestDiff(array, desired, { key, cutoff = Infinity } = {}) {
+function findSmallestDiff(array, desired, { key, cutoff = Infinity } = {}) {
   let closest
   if (typeof key === "function") {
     for (let i = 0; i < array.length; i++) {
       const element = array[i]
       const value = key(element, i, array)
       const diff = Math.abs(value - desired)
-      if (diff < cutoff || (diff === cutoff && !closest)) {
+      if (diff < cutoff || (diff === cutoff && closest === undefined)) {
         closest = element
         cutoff = diff
       }
@@ -44,7 +49,7 @@ export function findSmallestDiff(array, desired, { key, cutoff = Infinity } = {}
     for (const element of array) {
       const value = element[key]
       const diff = Math.abs(value - desired)
-      if (diff < cutoff || (diff === cutoff && !closest)) {
+      if (diff < cutoff || (diff === cutoff && closest === undefined)) {
         closest = element
         cutoff = diff
       }
@@ -52,7 +57,7 @@ export function findSmallestDiff(array, desired, { key, cutoff = Infinity } = {}
   } else {
     for (const value of array) {
       const diff = Math.abs(value - desired)
-      if (diff < cutoff || (diff === cutoff && !closest)) {
+      if (diff < cutoff || (diff === cutoff && closest === undefined)) {
         closest = value
         cutoff = diff
       }
@@ -62,13 +67,13 @@ export function findSmallestDiff(array, desired, { key, cutoff = Infinity } = {}
 }
 
 // @ts-ignore
-export function findClosestLT(array, desired, { key, cutoff = -Infinity } = {}) {
+function findClosestLT(array, desired, { key, cutoff = -Infinity } = {}) {
   let closest
   if (typeof key === "function") {
     for (let i = 0; i < array.length; i++) {
       const element = array[i]
       const value = key(element, i, array)
-      if (value < desired && (value > cutoff || (value === cutoff && !closest))) {
+      if (value < desired && (value > cutoff || (value === cutoff && closest === undefined))) {
         closest = element
         cutoff = value
       }
@@ -76,14 +81,14 @@ export function findClosestLT(array, desired, { key, cutoff = -Infinity } = {}) 
   } else if (typeof key === "number" || typeof key === "string") {
     for (const element of array) {
       const value = element[key]
-      if (value < desired && (value > cutoff || (value === cutoff && !closest))) {
+      if (value < desired && (value > cutoff || (value === cutoff && closest === undefined))) {
         closest = element
         cutoff = value
       }
     }
   } else {
     for (const value of array) {
-      if (value < desired && (value > cutoff || (value === cutoff && !closest))) {
+      if (value < desired && (value > cutoff || (value === cutoff && closest === undefined))) {
         closest = value
         cutoff = value
       }
@@ -93,13 +98,13 @@ export function findClosestLT(array, desired, { key, cutoff = -Infinity } = {}) 
 }
 
 // @ts-ignore
-export function findClosestLTE(array, desired, { key, cutoff = -Infinity } = {}) {
+function findClosestLTE(array, desired, { key, cutoff = -Infinity } = {}) {
   let closest
   if (typeof key === "function") {
     for (let i = 0; i < array.length; i++) {
       const element = array[i]
       const value = key(element, i, array)
-      if (value <= desired && (value > cutoff || (value === cutoff && !closest))) {
+      if (value <= desired && (value > cutoff || (value === cutoff && closest === undefined))) {
         closest = element
         cutoff = value
       }
@@ -107,14 +112,14 @@ export function findClosestLTE(array, desired, { key, cutoff = -Infinity } = {})
   } else if (typeof key === "number" || typeof key === "string") {
     for (const element of array) {
       const value = element[key]
-      if (value <= desired && (value > cutoff || (value === cutoff && !closest))) {
+      if (value <= desired && (value > cutoff || (value === cutoff && closest === undefined))) {
         closest = element
         cutoff = value
       }
     }
   } else {
     for (const value of array) {
-      if (value <= desired && (value > cutoff || (value === cutoff && !closest))) {
+      if (value <= desired && (value > cutoff || (value === cutoff && closest === undefined))) {
         closest = value
         cutoff = value
       }
@@ -124,13 +129,13 @@ export function findClosestLTE(array, desired, { key, cutoff = -Infinity } = {})
 }
 
 // @ts-ignore
-export function findClosestGT(array, desired, { key, cutoff = Infinity } = {}) {
+function findClosestGT(array, desired, { key, cutoff = Infinity } = {}) {
   let closest
   if (typeof key === "function") {
     for (let i = 0; i < array.length; i++) {
       const element = array[i]
       const value = key(element, i, array)
-      if (value > desired && (value < cutoff || (value === cutoff && !closest))) {
+      if (value > desired && (value < cutoff || (value === cutoff && closest === undefined))) {
         closest = element
         cutoff = value
       }
@@ -138,14 +143,14 @@ export function findClosestGT(array, desired, { key, cutoff = Infinity } = {}) {
   } else if (typeof key === "number" || typeof key === "string") {
     for (const element of array) {
       const value = element[key]
-      if (value > desired && (value < cutoff || (value === cutoff && !closest))) {
+      if (value > desired && (value < cutoff || (value === cutoff && closest === undefined))) {
         closest = element
         cutoff = value
       }
     }
   } else {
     for (const value of array) {
-      if (value > desired && (value < cutoff || (value === cutoff && !closest))) {
+      if (value > desired && (value < cutoff || (value === cutoff && closest === undefined))) {
         closest = value
         cutoff = value
       }
@@ -155,13 +160,13 @@ export function findClosestGT(array, desired, { key, cutoff = Infinity } = {}) {
 }
 
 // @ts-ignore
-export function findClosestGTE(array, desired, { key, cutoff = Infinity } = {}) {
+function findClosestGTE(array, desired, { key, cutoff = Infinity } = {}) {
   let closest
   if (typeof key === "function") {
     for (let i = 0; i < array.length; i++) {
       const element = array[i]
       const value = key(element, i, array)
-      if (value >= desired && (value < cutoff || (value === cutoff && !closest))) {
+      if (value >= desired && (value < cutoff || (value === cutoff && closest === undefined))) {
         closest = element
         cutoff = value
       }
@@ -169,14 +174,14 @@ export function findClosestGTE(array, desired, { key, cutoff = Infinity } = {}) 
   } else if (typeof key === "number" || typeof key === "string") {
     for (const element of array) {
       const value = element[key]
-      if (value >= desired && (value < cutoff || (value === cutoff && !closest))) {
+      if (value >= desired && (value < cutoff || (value === cutoff && closest === undefined))) {
         closest = element
         cutoff = value
       }
     }
   } else {
     for (const value of array) {
-      if (value >= desired && (value < cutoff || (value === cutoff && !closest))) {
+      if (value >= desired && (value < cutoff || (value === cutoff && closest === undefined))) {
         closest = value
         cutoff = value
       }

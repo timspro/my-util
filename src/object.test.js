@@ -6,8 +6,15 @@ import {
   deepMerge,
   deepMergeCopy,
   deleteUndefinedValues,
+  isArrayEqual,
   isClass,
+  isDateEqual,
+  isMapEqual,
   isObject,
+  isPlainObject,
+  isRegExpEqual,
+  isSetEqual,
+  isStatefulBuiltinObject,
   like,
   mapValues,
   mutateValues,
@@ -42,6 +49,72 @@ describe("isObject", () => {
     expect(isObject(() => {})).toBe(false)
     // eslint-disable-next-line func-names, prefer-arrow-callback
     expect(isObject(function () {})).toBe(false)
+  })
+})
+
+// --- isStatefulBuiltinObject ---
+describe("isStatefulBuiltinObject", () => {
+  it("returns true for arrays, Dates, RegExps, Maps, and Sets", () => {
+    expect(isStatefulBuiltinObject([])).toBe(true)
+    expect(isStatefulBuiltinObject(new Date())).toBe(true)
+    expect(isStatefulBuiltinObject(/abc/u)).toBe(true)
+    expect(isStatefulBuiltinObject(new Map())).toBe(true)
+    expect(isStatefulBuiltinObject(new Set())).toBe(true)
+  })
+
+  it("returns false for plain objects and custom class instances", () => {
+    class Foo {}
+    expect(isStatefulBuiltinObject({})).toBe(false)
+    expect(isStatefulBuiltinObject(new Foo())).toBe(false)
+  })
+
+  it("returns false for null, primitives, and functions", () => {
+    expect(isStatefulBuiltinObject(null)).toBe(false)
+    expect(isStatefulBuiltinObject(1)).toBe(false)
+    expect(isStatefulBuiltinObject("str")).toBe(false)
+    expect(isStatefulBuiltinObject(() => {})).toBe(false)
+  })
+})
+
+// --- isPlainObject ---
+describe("isPlainObject", () => {
+  it("returns true for plain objects", () => {
+    expect(isPlainObject({})).toBe(true)
+    expect(isPlainObject({ a: 1 })).toBe(true)
+    expect(isPlainObject(Object.create(null))).toBe(true)
+  })
+
+  it("returns true for custom class instances", () => {
+    class Foo {
+      constructor() {
+        this.x = 1
+      }
+    }
+    expect(isPlainObject(new Foo())).toBe(true)
+  })
+
+  it("returns false for arrays", () => {
+    expect(isPlainObject([])).toBe(false)
+    expect(isPlainObject([1, 2])).toBe(false)
+  })
+
+  it("returns false for Dates, RegExps, Maps, and Sets", () => {
+    expect(isPlainObject(new Date())).toBe(false)
+    expect(isPlainObject(/abc/u)).toBe(false)
+    expect(isPlainObject(new Map())).toBe(false)
+    expect(isPlainObject(new Set())).toBe(false)
+  })
+
+  it("returns false for null", () => {
+    expect(isPlainObject(null)).toBe(false)
+  })
+
+  it("returns false for primitives and functions", () => {
+    expect(isPlainObject(1)).toBe(false)
+    expect(isPlainObject("str")).toBe(false)
+    expect(isPlainObject(true)).toBe(false)
+    expect(isPlainObject(undefined)).toBe(false)
+    expect(isPlainObject(() => {})).toBe(false)
   })
 })
 
@@ -189,7 +262,7 @@ describe("via", () => {
 })
 
 // --- like ---
-describe("contains", () => {
+describe("like", () => {
   it("returns true when object contains all template keys with same values", () => {
     const template = { a: 1, b: 2 }
     const fn = like(template)
@@ -234,15 +307,14 @@ describe("contains", () => {
     expect(fn({ a: 0 })).toBe(true)
   })
 
-  // ISSUE: contains() does not check for own properties only; it will match inherited properties.
-  it("matches inherited properties in the object", () => {
+  it("does not match a template key that is only inherited, not own", () => {
     const template = { foo: 1 }
     const fn = like(template)
     const proto = { foo: 1 }
     const obj = Object.create(proto)
-    expect(fn(obj)).toBe(true)
-    obj.foo = 2
     expect(fn(obj)).toBe(false)
+    obj.foo = 1
+    expect(fn(obj)).toBe(true)
   })
 })
 
@@ -303,6 +375,44 @@ describe("deepCopy", () => {
     const fn = () => 42
     expect(deepCopy(fn)).toBe(fn)
   })
+
+  it("copies Dates into a new equivalent Date instance", () => {
+    const date = new Date(2020, 1, 1)
+    const copy = deepCopy(date)
+    expect(copy).not.toBe(date)
+    expect(copy instanceof Date).toBe(true)
+    expect(copy.getTime()).toBe(date.getTime())
+  })
+
+  it("copies RegExps into a new equivalent RegExp instance", () => {
+    const regex = /abc/giu
+    const copy = deepCopy(regex)
+    expect(copy).not.toBe(regex)
+    expect(copy instanceof RegExp).toBe(true)
+    expect(copy.source).toBe(regex.source)
+    expect(copy.flags).toBe(regex.flags)
+  })
+
+  it("copies Maps into a new equivalent Map instance, deep-copying entries", () => {
+    const inner = { a: 1 }
+    const map = new Map([["key", inner]])
+    const copy = deepCopy(map)
+    expect(copy).not.toBe(map)
+    expect(copy instanceof Map).toBe(true)
+    expect(copy.get("key")).toEqual(inner)
+    expect(copy.get("key")).not.toBe(inner)
+  })
+
+  it("copies Sets into a new equivalent Set instance, deep-copying elements", () => {
+    const inner = { a: 1 }
+    const set = new Set([inner])
+    const copy = deepCopy(set)
+    expect(copy).not.toBe(set)
+    expect(copy instanceof Set).toBe(true)
+    const [copiedInner] = copy
+    expect(copiedInner).toEqual(inner)
+    expect(copiedInner).not.toBe(inner)
+  })
 })
 
 // --- deepMerge ---
@@ -359,6 +469,15 @@ describe("deepMerge", () => {
     const target = {}
     expect(deepMerge(target, source)).toEqual({ a: 2 })
     expect("x" in target).toBe(false)
+  })
+
+  it("shadows an inherited target property with an own property from the source", () => {
+    const proto = { a: 1 }
+    const target = Object.create(proto)
+    const source = { a: 2 }
+    deepMerge(target, source)
+    expect(Object.hasOwn(target, "a")).toBe(true)
+    expect(target.a).toBe(2)
   })
 
   it("merges deeply with multiple sources", () => {
@@ -419,6 +538,22 @@ describe("deepMerge", () => {
     const target = { a: { b: 1 }, arr: { x: 1 } }
     const source = { a: { c: 2 }, arr: [1, 2] }
     expect(deepMerge(target, source)).toEqual({ a: { b: 1, c: 2 }, arr: [1, 2] })
+  })
+
+  it("replaces a target Date with the source Date instead of merging into it", () => {
+    const target = { d: new Date(2020, 1, 1) }
+    const newDate = new Date(2021, 1, 1)
+    const source = { d: newDate }
+    expect(deepMerge(target, source)).toEqual({ d: newDate })
+    expect(target.d).toBe(newDate)
+  })
+
+  it("replaces a target Map with the source Map instead of merging into it", () => {
+    const target = { m: new Map([["a", 1]]) }
+    const newMap = new Map([["b", 2]])
+    const source = { m: newMap }
+    expect(deepMerge(target, source)).toEqual({ m: newMap })
+    expect(target.m).toBe(newMap)
   })
 })
 
@@ -533,9 +668,9 @@ describe("deepEqual", () => {
     expect(deepEqual([1, 2, 3], [3, 2, 1])).toBe(false)
   })
 
-  it("returns true if one is array and one is object", () => {
-    expect(deepEqual([1, 2], { 0: 1, 1: 2 })).toBe(true)
-    expect(deepEqual({ 0: 1, 1: 2 }, [1, 2])).toBe(true)
+  it("returns false if one is array and one is plain object, even with matching keys/values", () => {
+    expect(deepEqual([1, 2], { 0: 1, 1: 2 })).toBe(false)
+    expect(deepEqual({ 0: 1, 1: 2 }, [1, 2])).toBe(false)
   })
 
   it("returns true for objects with same keys in different order", () => {
@@ -577,8 +712,8 @@ describe("deepEqual", () => {
     expect(deepEqual({ a: 1 }, { a: 1, b: 2 })).toBe(false)
   })
 
-  it("returns true if object keys match but values are objects of different types", () => {
-    expect(deepEqual({ a: [1, 2] }, { a: { 0: 1, 1: 2 } })).toBe(true)
+  it("returns false if a nested value is an array on one side and a plain object on the other", () => {
+    expect(deepEqual({ a: [1, 2] }, { a: { 0: 1, 1: 2 } })).toBe(false)
   })
 
   it("returns false for objects with missing keys", () => {
@@ -592,6 +727,159 @@ describe("deepEqual", () => {
   it("returns false if one object has undefined key and the other doesn't", () => {
     expect(deepEqual({ a: undefined }, {})).toBe(false)
     expect(deepEqual({}, { a: undefined })).toBe(false)
+  })
+
+  it("compares Dates by getTime(), not by enumerable keys", () => {
+    expect(deepEqual(new Date(2020, 1, 1), new Date(2020, 1, 1))).toBe(true)
+    expect(deepEqual(new Date(2020, 1, 1), new Date(2021, 1, 1))).toBe(false)
+  })
+
+  it("returns false when only one side is a Date", () => {
+    expect(deepEqual(new Date(2020, 1, 1), {})).toBe(false)
+    expect(deepEqual({}, new Date(2020, 1, 1))).toBe(false)
+  })
+
+  it("compares RegExps by source and flags", () => {
+    expect(deepEqual(/abc/giu, /abc/giu)).toBe(true)
+    expect(deepEqual(/abc/gu, /abc/iu)).toBe(false)
+    expect(deepEqual(/abc/u, /xyz/u)).toBe(false)
+  })
+
+  it("compares Maps by size and entries, ignoring insertion order", () => {
+    expect(
+      deepEqual(
+        new Map([
+          ["a", 1],
+          ["b", 2],
+        ]),
+        new Map([
+          ["b", 2],
+          ["a", 1],
+        ])
+      )
+    ).toBe(true)
+    expect(deepEqual(new Map([["a", 1]]), new Map([["a", 2]]))).toBe(false)
+    expect(deepEqual(new Map([["a", 1]]), new Map())).toBe(false)
+  })
+
+  it("compares Map values deeply, but Map keys by reference", () => {
+    // Values: two different-but-structurally-equal objects are still a match.
+    expect(deepEqual(new Map([["k", { x: 1 }]]), new Map([["k", { x: 1 }]]))).toBe(true)
+    expect(deepEqual(new Map([["k", { x: 1 }]]), new Map([["k", { x: 2 }]]))).toBe(false)
+    // Keys: Map lookup can't search deeply, so two different-but-equal key objects don't match.
+    expect(deepEqual(new Map([[{ id: 1 }, "v"]]), new Map([[{ id: 1 }, "v"]]))).toBe(false)
+  })
+
+  it("compares Sets by size and membership", () => {
+    expect(deepEqual(new Set([1, 2]), new Set([2, 1]))).toBe(true)
+    expect(deepEqual(new Set([1, 2]), new Set([1, 3]))).toBe(false)
+    expect(deepEqual(new Set([1]), new Set())).toBe(false)
+  })
+
+  it("compares Set elements by reference, not deeply", () => {
+    expect(deepEqual(new Set([{ x: 1 }]), new Set([{ x: 1 }]))).toBe(false)
+  })
+})
+
+// --- isArrayEqual ---
+describe("isArrayEqual", () => {
+  it("returns true for arrays with the same length and elements", () => {
+    expect(isArrayEqual([1, 2, 3], [1, 2, 3])).toBe(true)
+    expect(isArrayEqual([], [])).toBe(true)
+  })
+
+  it("returns false for arrays with different lengths", () => {
+    expect(isArrayEqual([1, 2], [1, 2, 3])).toBe(false)
+  })
+
+  it("returns false for arrays with different elements at the same index", () => {
+    expect(isArrayEqual([1, 2, 3], [3, 2, 1])).toBe(false)
+  })
+
+  it("uses the passed compare function for elements", () => {
+    const a = [{ x: 1 }]
+    const b = [{ x: 1 }]
+    expect(isArrayEqual(a, b, deepEqual)).toBe(true)
+  })
+
+  it("defaults compare to Object.is when not passed", () => {
+    expect(isArrayEqual([1, 2], [1, 2])).toBe(true)
+    expect(isArrayEqual([{ x: 1 }], [{ x: 1 }])).toBe(false)
+  })
+})
+
+// --- isDateEqual ---
+describe("isDateEqual", () => {
+  it("returns true for Dates with the same getTime()", () => {
+    expect(isDateEqual(new Date(2020, 1, 1), new Date(2020, 1, 1))).toBe(true)
+  })
+
+  it("returns false for Dates with different getTime()", () => {
+    expect(isDateEqual(new Date(2020, 1, 1), new Date(2021, 1, 1))).toBe(false)
+  })
+})
+
+// --- isRegExpEqual ---
+describe("isRegExpEqual", () => {
+  it("returns true for RegExps with the same source and flags", () => {
+    expect(isRegExpEqual(/abc/giu, /abc/giu)).toBe(true)
+  })
+
+  it("returns false for RegExps with different source or flags", () => {
+    expect(isRegExpEqual(/abc/gu, /abc/iu)).toBe(false)
+    expect(isRegExpEqual(/abc/u, /xyz/u)).toBe(false)
+  })
+})
+
+// --- isMapEqual ---
+describe("isMapEqual", () => {
+  it("returns true for Maps with the same size and entries, ignoring insertion order", () => {
+    const a = new Map([
+      ["a", 1],
+      ["b", 2],
+    ])
+    const b = new Map([
+      ["b", 2],
+      ["a", 1],
+    ])
+    expect(isMapEqual(a, b, deepEqual)).toBe(true)
+  })
+
+  it("returns false for Maps with different sizes or values", () => {
+    expect(isMapEqual(new Map([["a", 1]]), new Map(), deepEqual)).toBe(false)
+    expect(isMapEqual(new Map([["a", 1]]), new Map([["a", 2]]), deepEqual)).toBe(false)
+  })
+
+  it("uses the passed compare function for values, but matches keys by reference", () => {
+    const a = new Map([["k", { x: 1 }]])
+    const b = new Map([["k", { x: 1 }]])
+    expect(isMapEqual(a, b, deepEqual)).toBe(true)
+    expect(isMapEqual(a, b, (x, y) => x === y)).toBe(false)
+  })
+
+  it("defaults compare to Object.is when not passed", () => {
+    const a = new Map([["k", 1]])
+    const b = new Map([["k", 1]])
+    expect(isMapEqual(a, b)).toBe(true)
+    const c = new Map([["k", { x: 1 }]])
+    const d = new Map([["k", { x: 1 }]])
+    expect(isMapEqual(c, d)).toBe(false)
+  })
+})
+
+// --- isSetEqual ---
+describe("isSetEqual", () => {
+  it("returns true for Sets with the same size and membership, ignoring insertion order", () => {
+    expect(isSetEqual(new Set([1, 2]), new Set([2, 1]))).toBe(true)
+  })
+
+  it("returns false for Sets with different sizes or members", () => {
+    expect(isSetEqual(new Set([1]), new Set())).toBe(false)
+    expect(isSetEqual(new Set([1, 2]), new Set([1, 3]))).toBe(false)
+  })
+
+  it("matches members by reference, not deeply", () => {
+    expect(isSetEqual(new Set([{ x: 1 }]), new Set([{ x: 1 }]))).toBe(false)
   })
 })
 

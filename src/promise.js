@@ -183,32 +183,3 @@ export function alert(result) {
   }
   return result
 }
-
-// unused but included for reference
-/**
- * Parallelize executions of a function using `Promise.all()`.
- * This is useful because usually you want to set a limit to the number of parallel requests possible at once.
- * To maintain parity with allSettled(), this function provides both "values" and "returned" as output but they are the same array.
- * Since this function throws on the first error (same behavior as Promise.all()), there isn't a situation where this function returns but an individual call errored.
- * @template T
- * @template R
- * @param {Object} $1
- * @param {Array<T>} $1.array
- * @param {number=} $1.limit If not provided, each call is done in parallel.
- * @param {boolean=} $1.flatten Flattens values before returning; useful if promises return arrays
- * @param {MyUtil.Mapper<T, Promise<R>>} callback
- * @returns {Promise<{values: Array<R>, returned: Array<R>}>}
- */
-export async function throwFirstReject({ array, limit, flatten = false }, callback) {
-  let values = []
-  const chunked = chunk(array, limit)
-  for (const elements of chunked) {
-    const promises = elements.map(callback)
-    const _values = await Promise.all(promises)
-    values = values.concat(_values)
-  }
-  if (flatten) {
-    values = values.flat()
-  }
-  return { values, returned: values }
-}

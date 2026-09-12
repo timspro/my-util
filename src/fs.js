@@ -1,5 +1,4 @@
 import { readFile, stat, writeFile } from "node:fs/promises"
-import { tmpdir } from "node:os"
 import { promisify } from "node:util"
 import { gunzip as _gunzip, gzip as _gzip } from "node:zlib"
 
@@ -65,13 +64,4 @@ export async function pathExists(path, { maxAge = undefined, throws = false } = 
     }
   }
   return false
-}
-
-/**
- * Make a path to a temporary directory.
- * @returns {string}
- */
-export function makeTempDirectory() {
-  const path = tmpdir()
-  return path
 }

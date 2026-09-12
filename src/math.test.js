@@ -109,12 +109,17 @@ describe("line", () => {
     expect(f(1)).toBeNaN()
   })
 
-  // ISSUE: line() does not guard against identical points (x1===x2 and y1===y2), which yields NaN for all x. Consider throwing or documenting behavior for degenerate input.
   it("works with negative coordinates", () => {
     const f = line([-1, -2], [1, 2]) // slope 2
     expect(f(-1)).toBe(-2)
     expect(f(0)).toBe(0)
     expect(f(1)).toBe(2)
+  })
+
+  it("handles identical points by returning NaN (0/0 slope), per its documented caveat", () => {
+    const f = line([2, 1], [2, 1])
+    expect(f(2)).toBeNaN()
+    expect(f(0)).toBeNaN()
   })
 })
 
@@ -258,6 +263,11 @@ describe("formatPlus", () => {
     expect(formatPlus("0")).toBe("0")
   })
 
+  it("does not double the plus for a string that already starts with +", () => {
+    expect(formatPlus("+5")).toBe("+5")
+    expect(formatPlus("+0")).toBe("+0")
+  })
+
   it("returns undefined for non-number, non-string input", () => {
     expect(formatPlus(undefined)).toBeUndefined()
     expect(formatPlus(null)).toBeUndefined()
@@ -268,7 +278,12 @@ describe("formatPlus", () => {
     expect(formatPlus(NaN)).toBeUndefined()
   })
 
-  // ISSUE: formatPlus() treats any string not starting with "-" as positive, e.g. "+5" becomes "++5" and "abc" becomes "+abc". Consider handling leading "+" or non-numeric strings explicitly.
+  it("does not validate that a string represents a number, per its documented contract", () => {
+    // formatPlus() only looks at the first character of a string (+, -, or neither) - it never
+    // checks whether the rest represents a valid number.
+    expect(formatPlus("abc")).toBe("+abc")
+    expect(formatPlus("-abc")).toBe("-abc")
+  })
 })
 
 describe("range", () => {
@@ -392,9 +407,6 @@ describe("isNumber", () => {
 })
 
 describe("quantiles", () => {
-  // ISSUE: JSDoc for labeller parameter uses "$.labeller" instead of "$1.labeller", which is inconsistent with the other params.
-  // ISSUE: If labeller maps multiple percent values to the same label, later entries overwrite earlier ones without warning.
-
   it("maps 0..100 deciles for an already sorted array of length 11 (default rounding)", () => {
     const arr = Array.from({ length: 11 }, (_, i) => i)
     const result = quantiles(arr, { N: 10 })
@@ -523,5 +535,51 @@ describe("quantiles", () => {
     expect(result.Q2).toBe(4)
     expect(result.Q3).toBe(6)
     expect(result.Q4).toBe(8)
+  })
+
+  describe("label collisions with the default labeller (N > 100)", () => {
+    // With the default Math.round labeller, labels are integers 0-100 (101 possible values), so
+    // requesting N > 100 buckets guarantees some labels collide - i.e. multiple percentile
+    // indices round to the same label. i runs 0..N in increasing order, so "last write wins"
+    // naturally keeps the highest-index (closest to the top) member of each collision group,
+    // which happens to line up with wanting the true maximum at the very top label. It does NOT
+    // line up at the very bottom: without special-casing, label 0 would end up holding whichever
+    // later percentile also rounded down to 0, not the true minimum - hence label 0 alone keeps
+    // its first-set value instead.
+    const arr = Array.from({ length: 1001 }, (_, i) => i) // 0..1000
+
+    it("does not throw when N exceeds 100 (labels may collide silently instead)", () => {
+      expect(() => quantiles(arr, { N: 1000 })).not.toThrow()
+    })
+
+    it("keeps the first-set (true minimum) value for label 0 despite the collision", () => {
+      // i=0..4 all round to label 0; only i=0 (percentileIndex 0, the true minimum) should stick.
+      const result = quantiles(arr, { N: 1000 })
+      expect(result[0]).toBe(0)
+    })
+
+    it("keeps the true maximum for the top label even though it also collides", () => {
+      // i=995..1000 all round to label 100; i=1000 (the true maximum) is last, so it naturally wins.
+      const result = quantiles(arr, { N: 1000 })
+      expect(result[100]).toBe(1000)
+    })
+
+    it("uses the last-set value (not the first) for a colliding non-zero, non-max label", () => {
+      // i=495..504 all round to label 50; last-write-wins keeps i=504, not i=495.
+      const result = quantiles(arr, { N: 1000 })
+      expect(result[50]).toBe(504)
+    })
+
+    it("returns fewer than N+1 entries once collisions start eating labels", () => {
+      const result = quantiles(arr, { N: 1000 })
+      expect(Object.keys(result).length).toBe(101)
+    })
+
+    it("returns all N+1 entries when a custom labeller avoids collisions", () => {
+      const result = quantiles(arr, { N: 1000, labeller: (x) => x })
+      expect(Object.keys(result).length).toBe(1001)
+      expect(result[0]).toBe(0)
+      expect(result[100]).toBe(1000)
+    })
   })
 })

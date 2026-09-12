@@ -1,12 +1,19 @@
 import { mod } from "./math.js"
 
+// systemNow is immutable and can be compared by reference
+// if module is somehow loaded multiple times, each instantiation will have its own systemNow and currentNow
 const systemNow = () => new Date()
 
+let _now = systemNow
+
 /**
- * A function that is called with no arguments and returns the "current date and time" via a Date instance: "now".
- * By default, the current date and time is given by the system.
+ * Returns the "current date and time" via a Date instance.
+ * By default, the current date and time is given by the system (new Date()); see setNow() to override it.
+ * @returns {Date}
  */
-export let now = systemNow
+export function now() {
+  return _now()
+}
 
 /**
  * Set a callback for "now". The callback will be called with no arguments and should return a Date instance.
@@ -17,13 +24,21 @@ export let now = systemNow
  */
 export function setNow(callback = undefined) {
   if (callback === undefined) {
-    now = systemNow
+    _now = systemNow
     return
   }
   if (typeof callback !== "function") {
     throw new Error("now must be a function")
   }
-  now = callback
+  _now = callback
+}
+
+/**
+ * Alias for setNow(), called with no arguments.
+ * Resets now to be system now, as it is originally.
+ */
+export function resetNow() {
+  setNow()
 }
 
 /**
@@ -221,16 +236,20 @@ export function addTime(timeString, { minutes = 0, hours = 0 } = {}) {
   return newTime
 }
 
-const MINUTES_IN_DAY = 24 * 60
 /**
  * Get all minutes between two times.
- * This does not work across day i.e 23:59:00 to 00:00:00.
+ * This does not work across day i.e 23:59:00 to 00:00:00: stepping past midnight wraps back to
+ *  "00:00:00", which can still satisfy `current <= end` since times are compared as strings with
+ *  no date context, sending the range in a loop until it either passes end on a later lap or
+ *  cycles back to exactly start - at which point it throws (see below) rather than loop forever.
  * @param {string} start HH:mm:ss or HH:mm
  * @param {string} end HH:mm:ss or HH:mm
  * @param {Object} $1
  * @param {number=} $1.hours Hours to add to get next time in range. Default 0
  * @param {number=} $1.minutes Minutes to add to get next time in range. Default 1
  * @returns {Array<string>} times in HH:mm:ss
+ * @throws {Error} If adding hours/minutes ever cycles the range back to exactly the start time
+ *  (e.g. a zero step, or a step that evenly divides 24h, or a range that crosses midnight).
  */
 export function getTimeRange(start, end, { hours = 0, minutes = 1 } = {}) {
   // coerce start and end to seconds
@@ -241,8 +260,10 @@ export function getTimeRange(start, end, { hours = 0, minutes = 1 } = {}) {
   while (current <= end) {
     times.push(current)
     current = addTime(current, { hours, minutes })
-    if (times.length >= MINUTES_IN_DAY) {
-      break
+    if (current === start) {
+      throw new Error(
+        `adding ${hours}h ${minutes}m caused the time range to cycle back to the start time (${start})`
+      )
     }
   }
   return times

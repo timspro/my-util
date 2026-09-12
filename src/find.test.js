@@ -1,236 +1,248 @@
 import { describe, expect, it } from "vitest"
 
-const {
-  findEq,
-  findSmallestDiff,
-  findClosestLT,
-  findClosestLTE,
-  findClosestGT,
-  findClosestGTE,
-  findClosest,
-  findMin,
-  findMax,
-  findTruthy,
-} = await import("./find.js")
+// findEq/findSmallestDiff/findClosestLT/LTE/GT/GTE are internal implementation details of
+// findClosest (not exported - see the comment at the top of find.js), so they're exercised here
+// only through findClosest's "comparator" option rather than imported directly.
+const { findClosest, findMin, findMax, findTruthy } = await import("./find.js")
 
-describe("findEq", () => {
+describe("findClosest (eq comparator)", () => {
   it("returns the first element equal to desired (no key)", () => {
-    expect(findEq([1, 2, 3, 2], 2)).toBe(2)
-    expect(findEq([1, 2, 3], 4)).toBeUndefined()
+    expect(findClosest([1, 2, 3, 2], 2, { comparator: "eq" })).toBe(2)
+    expect(findClosest([1, 2, 3], 4, { comparator: "eq" })).toBeUndefined()
   })
 
   it("returns the first value from key function equal to desired", () => {
     const arr = [{ v: 1 }, { v: 2 }, { v: 3 }]
-    expect(findEq(arr, 2, { key: (e) => e.v })).toBe(2)
-    expect(findEq(arr, 4, { key: (e) => e.v })).toBeUndefined()
+    expect(findClosest(arr, 2, { comparator: "eq", key: (e) => e.v })).toBe(2)
+    expect(findClosest(arr, 4, { comparator: "eq", key: (e) => e.v })).toBeUndefined()
   })
 
   it("returns the first value from key string equal to desired", () => {
     const arr = [{ x: 1 }, { x: 2 }, { x: 3 }]
-    expect(findEq(arr, 2, { key: "x" })).toBe(2)
-    expect(findEq(arr, 4, { key: "x" })).toBeUndefined()
+    expect(findClosest(arr, 2, { comparator: "eq", key: "x" })).toBe(2)
+    expect(findClosest(arr, 4, { comparator: "eq", key: "x" })).toBeUndefined()
   })
 
   it("returns the first value from key number equal to desired", () => {
     const arr = [[1], [2], [3]]
-    expect(findEq(arr, 2, { key: 0 })).toBe(2)
-    expect(findEq(arr, 4, { key: 0 })).toBeUndefined()
+    expect(findClosest(arr, 2, { comparator: "eq", key: 0 })).toBe(2)
+    expect(findClosest(arr, 4, { comparator: "eq", key: 0 })).toBeUndefined()
   })
 
   it("returns undefined for empty array", () => {
-    expect(findEq([], 1)).toBeUndefined()
+    expect(findClosest([], 1, { comparator: "eq" })).toBeUndefined()
   })
 
   it("returns first matching value if there are duplicates", () => {
-    expect(findEq([2, 2, 3], 2)).toBe(2)
+    expect(findClosest([2, 2, 3], 2, { comparator: "eq" })).toBe(2)
     const arr = [{ v: 2 }, { v: 2 }]
-    expect(findEq(arr, 2, { key: (e) => e.v })).toBe(2)
+    expect(findClosest(arr, 2, { comparator: "eq", key: (e) => e.v })).toBe(2)
   })
 })
 
-describe("findSmallestDiff", () => {
+describe("findClosest (diff comparator)", () => {
   it("returns the element closest in absolute value to desired", () => {
-    expect(findSmallestDiff([1, 5, 9], 6)).toBe(5)
-    expect(findSmallestDiff([1, 5, 9], 8)).toBe(9)
-    expect(findSmallestDiff([1, 5, 9], 1)).toBe(1)
+    expect(findClosest([1, 5, 9], 6, { comparator: "diff" })).toBe(5)
+    expect(findClosest([1, 5, 9], 8, { comparator: "diff" })).toBe(9)
+    expect(findClosest([1, 5, 9], 1, { comparator: "diff" })).toBe(1)
   })
 
   it("returns the first element in case of tie", () => {
-    expect(findSmallestDiff([4, 8], 6)).toBe(4)
+    expect(findClosest([4, 8], 6, { comparator: "diff" })).toBe(4)
+  })
+
+  it("returns the first element in case of tie, even when it is falsy", () => {
+    expect(findClosest([0, 6], 3, { comparator: "diff" })).toBe(0)
   })
 
   it("returns undefined for empty array", () => {
-    expect(findSmallestDiff([], 10)).toBeUndefined()
+    expect(findClosest([], 10, { comparator: "diff" })).toBeUndefined()
   })
 
   it("supports key as function", () => {
     const arr = [{ v: 2 }, { v: 8 }]
-    expect(findSmallestDiff(arr, 5, { key: (e) => e.v })).toEqual({ v: 2 })
+    expect(findClosest(arr, 5, { comparator: "diff", key: (e) => e.v })).toEqual({ v: 2 })
   })
 
   it("supports key as string", () => {
     const arr = [{ x: 1 }, { x: 10 }]
-    expect(findSmallestDiff(arr, 8, { key: "x" })).toEqual({ x: 10 })
+    expect(findClosest(arr, 8, { comparator: "diff", key: "x" })).toEqual({ x: 10 })
   })
 
   it("supports key as number", () => {
     const arr = [[2], [8]]
-    expect(findSmallestDiff(arr, 7, { key: 0 })).toEqual([8])
+    expect(findClosest(arr, 7, { comparator: "diff", key: 0 })).toEqual([8])
   })
 
   it("respects cutoff", () => {
-    expect(findSmallestDiff([1, 5, 9], 6, { cutoff: 2 })).toBe(5)
-    expect(findSmallestDiff([1, 5, 9], 6, { cutoff: 1 })).toBe(5)
-    expect(findSmallestDiff([1, 5, 9], 6, { cutoff: 0 })).toBeUndefined()
+    expect(findClosest([1, 5, 9], 6, { comparator: "diff", cutoff: 2 })).toBe(5)
+    expect(findClosest([1, 5, 9], 6, { comparator: "diff", cutoff: 1 })).toBe(5)
+    expect(findClosest([1, 5, 9], 6, { comparator: "diff", cutoff: 0 })).toBeUndefined()
   })
 })
 
-describe("findClosestLT", () => {
+describe("findClosest (lt comparator)", () => {
   it("returns the closest element less than desired", () => {
-    expect(findClosestLT([1, 5, 9], 6)).toBe(5)
-    expect(findClosestLT([1, 5, 9], 2)).toBe(1)
-    expect(findClosestLT([1, 5, 9], 1)).toBeUndefined()
+    expect(findClosest([1, 5, 9], 6, { comparator: "lt" })).toBe(5)
+    expect(findClosest([1, 5, 9], 2, { comparator: "lt" })).toBe(1)
+    expect(findClosest([1, 5, 9], 1, { comparator: "lt" })).toBeUndefined()
   })
 
   it("returns first match if tie", () => {
-    expect(findClosestLT([2, 2, 1], 3)).toBe(2)
+    expect(findClosest([2, 2, 1], 3, { comparator: "lt" })).toBe(2)
+  })
+
+  it("returns first match if tie, even when it is falsy", () => {
+    expect(findClosest([0, 0, -1], 1, { comparator: "lt" })).toBe(0)
   })
 
   it("returns undefined for empty array", () => {
-    expect(findClosestLT([], 10)).toBeUndefined()
+    expect(findClosest([], 10, { comparator: "lt" })).toBeUndefined()
   })
 
   it("supports key as function", () => {
     const arr = [{ v: 2 }, { v: 8 }]
-    expect(findClosestLT(arr, 8, { key: (e) => e.v })).toEqual({ v: 2 })
+    expect(findClosest(arr, 8, { comparator: "lt", key: (e) => e.v })).toEqual({ v: 2 })
   })
 
   it("supports key as string", () => {
     const arr = [{ x: 1 }, { x: 10 }]
-    expect(findClosestLT(arr, 8, { key: "x" })).toEqual({ x: 1 })
+    expect(findClosest(arr, 8, { comparator: "lt", key: "x" })).toEqual({ x: 1 })
   })
 
   it("supports key as number", () => {
     const arr = [[2], [8]]
-    expect(findClosestLT(arr, 7, { key: 0 })).toEqual([2])
+    expect(findClosest(arr, 7, { comparator: "lt", key: 0 })).toEqual([2])
   })
 
   it("respects cutoff", () => {
-    expect(findClosestLT([1, 5, 9], 6, { cutoff: 4 })).toBe(5)
-    expect(findClosestLT([1, 5, 9], 6, { cutoff: 5 })).toBe(5)
-    expect(findClosestLT([1, 5, 9], 6, { cutoff: 6 })).toBe(undefined)
+    expect(findClosest([1, 5, 9], 6, { comparator: "lt", cutoff: 4 })).toBe(5)
+    expect(findClosest([1, 5, 9], 6, { comparator: "lt", cutoff: 5 })).toBe(5)
+    expect(findClosest([1, 5, 9], 6, { comparator: "lt", cutoff: 6 })).toBe(undefined)
   })
 })
 
-describe("findClosestLTE", () => {
+describe("findClosest (lte comparator)", () => {
   it("returns the closest element less than or equal to desired", () => {
-    expect(findClosestLTE([1, 5, 9], 5)).toBe(5)
-    expect(findClosestLTE([1, 5, 9], 6)).toBe(5)
-    expect(findClosestLTE([1, 5, 9], 1)).toBe(1)
-    expect(findClosestLTE([1, 5, 9], 0)).toBeUndefined()
+    expect(findClosest([1, 5, 9], 5, { comparator: "lte" })).toBe(5)
+    expect(findClosest([1, 5, 9], 6, { comparator: "lte" })).toBe(5)
+    expect(findClosest([1, 5, 9], 1, { comparator: "lte" })).toBe(1)
+    expect(findClosest([1, 5, 9], 0, { comparator: "lte" })).toBeUndefined()
   })
 
   it("returns first match if tie", () => {
-    expect(findClosestLTE([2, 2, 1], 2)).toBe(2)
+    expect(findClosest([2, 2, 1], 2, { comparator: "lte" })).toBe(2)
+  })
+
+  it("returns first match if tie, even when it is falsy", () => {
+    expect(findClosest([0, 0, -1], 0, { comparator: "lte" })).toBe(0)
   })
 
   it("returns undefined for empty array", () => {
-    expect(findClosestLTE([], 10)).toBeUndefined()
+    expect(findClosest([], 10, { comparator: "lte" })).toBeUndefined()
   })
 
   it("supports key as function", () => {
     const arr = [{ v: 2 }, { v: 8 }]
-    expect(findClosestLTE(arr, 8, { key: (e) => e.v })).toEqual({ v: 8 })
+    expect(findClosest(arr, 8, { comparator: "lte", key: (e) => e.v })).toEqual({ v: 8 })
   })
 
   it("supports key as string", () => {
     const arr = [{ x: 1 }, { x: 10 }]
-    expect(findClosestLTE(arr, 8, { key: "x" })).toEqual({ x: 1 })
+    expect(findClosest(arr, 8, { comparator: "lte", key: "x" })).toEqual({ x: 1 })
   })
 
   it("supports key as number", () => {
     const arr = [[2], [8]]
-    expect(findClosestLTE(arr, 7, { key: 0 })).toEqual([2])
+    expect(findClosest(arr, 7, { comparator: "lte", key: 0 })).toEqual([2])
   })
 
   it("respects cutoff", () => {
-    expect(findClosestLTE([1, 5, 9], 6, { cutoff: 4 })).toBe(5)
-    expect(findClosestLTE([1, 5, 9], 6, { cutoff: 5 })).toBe(5)
-    expect(findClosestLTE([1, 5, 9], 6, { cutoff: 6 })).toBe(undefined)
+    expect(findClosest([1, 5, 9], 6, { comparator: "lte", cutoff: 4 })).toBe(5)
+    expect(findClosest([1, 5, 9], 6, { comparator: "lte", cutoff: 5 })).toBe(5)
+    expect(findClosest([1, 5, 9], 6, { comparator: "lte", cutoff: 6 })).toBe(undefined)
   })
 })
 
-describe("findClosestGT", () => {
+describe("findClosest (gt comparator)", () => {
   it("returns the closest element greater than desired", () => {
-    expect(findClosestGT([1, 5, 9], 6)).toBe(9)
-    expect(findClosestGT([1, 5, 9], 0)).toBe(1)
-    expect(findClosestGT([1, 5, 9], 9)).toBeUndefined()
+    expect(findClosest([1, 5, 9], 6, { comparator: "gt" })).toBe(9)
+    expect(findClosest([1, 5, 9], 0, { comparator: "gt" })).toBe(1)
+    expect(findClosest([1, 5, 9], 9, { comparator: "gt" })).toBeUndefined()
   })
 
   it("returns first match if tie", () => {
-    expect(findClosestGT([8, 8, 10], 7)).toBe(8)
+    expect(findClosest([8, 8, 10], 7, { comparator: "gt" })).toBe(8)
+  })
+
+  it("returns first match if tie, even when it is falsy", () => {
+    expect(findClosest([0, 0, 1], -1, { comparator: "gt" })).toBe(0)
   })
 
   it("returns undefined for empty array", () => {
-    expect(findClosestGT([], 10)).toBeUndefined()
+    expect(findClosest([], 10, { comparator: "gt" })).toBeUndefined()
   })
 
   it("supports key as function", () => {
     const arr = [{ v: 2 }, { v: 8 }]
-    expect(findClosestGT(arr, 2, { key: (e) => e.v })).toEqual({ v: 8 })
+    expect(findClosest(arr, 2, { comparator: "gt", key: (e) => e.v })).toEqual({ v: 8 })
   })
 
   it("supports key as string", () => {
     const arr = [{ x: 1 }, { x: 10 }]
-    expect(findClosestGT(arr, 8, { key: "x" })).toEqual({ x: 10 })
+    expect(findClosest(arr, 8, { comparator: "gt", key: "x" })).toEqual({ x: 10 })
   })
 
   it("supports key as number", () => {
     const arr = [[2], [8]]
-    expect(findClosestGT(arr, 2, { key: 0 })).toEqual([8])
+    expect(findClosest(arr, 2, { comparator: "gt", key: 0 })).toEqual([8])
   })
 
   it("respects cutoff", () => {
-    expect(findClosestGTE([1, 5, 9], 6, { cutoff: 10 })).toBe(9)
-    expect(findClosestGTE([1, 5, 9], 6, { cutoff: 9 })).toBe(9)
-    expect(findClosestGTE([1, 5, 9], 6, { cutoff: 8 })).toBeUndefined()
+    expect(findClosest([1, 5, 9], 6, { comparator: "gt", cutoff: 10 })).toBe(9)
+    expect(findClosest([1, 5, 9], 6, { comparator: "gt", cutoff: 9 })).toBe(9)
+    expect(findClosest([1, 5, 9], 6, { comparator: "gt", cutoff: 8 })).toBeUndefined()
   })
 })
 
-describe("findClosestGTE", () => {
+describe("findClosest (gte comparator)", () => {
   it("returns the closest element greater than or equal to desired", () => {
-    expect(findClosestGTE([1, 5, 9], 5)).toBe(5)
-    expect(findClosestGTE([1, 5, 9], 4)).toBe(5)
-    expect(findClosestGTE([1, 5, 9], 10)).toBeUndefined()
+    expect(findClosest([1, 5, 9], 5, { comparator: "gte" })).toBe(5)
+    expect(findClosest([1, 5, 9], 4, { comparator: "gte" })).toBe(5)
+    expect(findClosest([1, 5, 9], 10, { comparator: "gte" })).toBeUndefined()
   })
 
   it("returns first match if tie", () => {
-    expect(findClosestGTE([8, 8, 10], 8)).toBe(8)
+    expect(findClosest([8, 8, 10], 8, { comparator: "gte" })).toBe(8)
+  })
+
+  it("returns first match if tie, even when it is falsy", () => {
+    expect(findClosest([0, 0, 1], 0, { comparator: "gte" })).toBe(0)
   })
 
   it("returns undefined for empty array", () => {
-    expect(findClosestGTE([], 10)).toBeUndefined()
+    expect(findClosest([], 10, { comparator: "gte" })).toBeUndefined()
   })
 
   it("supports key as function", () => {
     const arr = [{ v: 2 }, { v: 8 }]
-    expect(findClosestGTE(arr, 2, { key: (e) => e.v })).toEqual({ v: 2 })
+    expect(findClosest(arr, 2, { comparator: "gte", key: (e) => e.v })).toEqual({ v: 2 })
   })
 
   it("supports key as string", () => {
     const arr = [{ x: 1 }, { x: 10 }]
-    expect(findClosestGTE(arr, 8, { key: "x" })).toEqual({ x: 10 })
+    expect(findClosest(arr, 8, { comparator: "gte", key: "x" })).toEqual({ x: 10 })
   })
 
   it("supports key as number", () => {
     const arr = [[2], [8]]
-    expect(findClosestGTE(arr, 2, { key: 0 })).toEqual([2])
+    expect(findClosest(arr, 2, { comparator: "gte", key: 0 })).toEqual([2])
   })
 
   it("respects cutoff", () => {
-    expect(findClosestGTE([1, 5, 9], 6, { cutoff: 10 })).toBe(9)
-    expect(findClosestGTE([1, 5, 9], 6, { cutoff: 9 })).toBe(9)
-    expect(findClosestGTE([1, 5, 9], 6, { cutoff: 8 })).toBeUndefined()
+    expect(findClosest([1, 5, 9], 6, { comparator: "gte", cutoff: 10 })).toBe(9)
+    expect(findClosest([1, 5, 9], 6, { comparator: "gte", cutoff: 9 })).toBe(9)
+    expect(findClosest([1, 5, 9], 6, { comparator: "gte", cutoff: 8 })).toBeUndefined()
   })
 })
 

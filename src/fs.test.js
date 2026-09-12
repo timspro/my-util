@@ -1,22 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const { readFileMock, statMock, tmpdirMock, gunzipMock, gzipMock, writeFileMock } = vi.hoisted(
-  () => ({
-    readFileMock: vi.fn(),
-    statMock: vi.fn(),
-    tmpdirMock: vi.fn(),
-    gunzipMock: vi.fn(),
-    gzipMock: vi.fn(),
-    writeFileMock: vi.fn(),
-  })
-)
+const { readFileMock, statMock, gunzipMock, gzipMock, writeFileMock } = vi.hoisted(() => ({
+  readFileMock: vi.fn(),
+  statMock: vi.fn(),
+  gunzipMock: vi.fn(),
+  gzipMock: vi.fn(),
+  writeFileMock: vi.fn(),
+}))
 vi.mock("node:fs/promises", () => ({
   readFile: readFileMock,
   stat: statMock,
   writeFile: writeFileMock,
-}))
-vi.mock("node:os", () => ({
-  tmpdir: tmpdirMock,
 }))
 vi.mock("node:zlib", () => ({
   gunzip: gunzipMock,
@@ -28,7 +22,7 @@ vi.mock("node:util", () => ({
 
 // Now import the module under test
 const mod = await import("./fs.js")
-const { readJSON, writeJSON, pathExists, makeTempDirectory } = mod
+const { readJSON, writeJSON, pathExists } = mod
 
 describe("readJSON", () => {
   beforeEach(() => vi.clearAllMocks())
@@ -128,13 +122,5 @@ describe("pathExists", () => {
     statMock.mockResolvedValue(stats)
     const result = await pathExists("file.txt", {})
     expect(result).toBe(stats)
-  })
-})
-
-describe("makeTempDirectory", () => {
-  it("returns the temp directory", () => {
-    tmpdirMock.mockReturnValue("/tmp")
-    expect(makeTempDirectory()).toBe("/tmp")
-    expect(tmpdirMock).toHaveBeenCalled()
   })
 })
