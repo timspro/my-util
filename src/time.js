@@ -180,7 +180,11 @@ export function isTimeString(string) {
  * @returns {boolean}
  */
 export function isDateTimeString(string, { separator = "T" } = {}) {
-  const [date, time] = string.split(separator)
+  const parts = string.split(separator)
+  if (parts.length > 2) {
+    return false
+  }
+  const [date, time] = parts
   return isDateString(date) && isTimeString(time)
 }
 
@@ -238,18 +242,15 @@ export function addTime(timeString, { minutes = 0, hours = 0 } = {}) {
 
 /**
  * Get all minutes between two times.
- * This does not work across day i.e 23:59:00 to 00:00:00: stepping past midnight wraps back to
- *  "00:00:00", which can still satisfy `current <= end` since times are compared as strings with
- *  no date context, sending the range in a loop until it either passes end on a later lap or
- *  cycles back to exactly start - at which point it throws (see below) rather than loop forever.
+ * This does not work across day boundary i.e 23:59:00 to 00:00:00.
+ * If the next computed time is less than or equal to the previous time, no more times are computed and already computed
+ *  times are returned.
  * @param {string} start HH:mm:ss or HH:mm
  * @param {string} end HH:mm:ss or HH:mm
  * @param {Object} $1
  * @param {number=} $1.hours Hours to add to get next time in range. Default 0
  * @param {number=} $1.minutes Minutes to add to get next time in range. Default 1
  * @returns {Array<string>} times in HH:mm:ss
- * @throws {Error} If adding hours/minutes ever cycles the range back to exactly the start time
- *  (e.g. a zero step, or a step that evenly divides 24h, or a range that crosses midnight).
  */
 export function getTimeRange(start, end, { hours = 0, minutes = 1 } = {}) {
   // coerce start and end to seconds
@@ -259,12 +260,11 @@ export function getTimeRange(start, end, { hours = 0, minutes = 1 } = {}) {
   let current = start
   while (current <= end) {
     times.push(current)
-    current = addTime(current, { hours, minutes })
-    if (current === start) {
-      throw new Error(
-        `adding ${hours}h ${minutes}m caused the time range to cycle back to the start time (${start})`
-      )
+    const next = addTime(current, { hours, minutes })
+    if (next <= current) {
+      break
     }
+    current = next
   }
   return times
 }

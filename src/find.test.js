@@ -11,21 +11,21 @@ describe("findClosest (eq comparator)", () => {
     expect(findClosest([1, 2, 3], 4, { comparator: "eq" })).toBeUndefined()
   })
 
-  it("returns the first value from key function equal to desired", () => {
+  it("returns the first element whose key function value equals desired", () => {
     const arr = [{ v: 1 }, { v: 2 }, { v: 3 }]
-    expect(findClosest(arr, 2, { comparator: "eq", key: (e) => e.v })).toBe(2)
+    expect(findClosest(arr, 2, { comparator: "eq", key: (e) => e.v })).toBe(arr[1])
     expect(findClosest(arr, 4, { comparator: "eq", key: (e) => e.v })).toBeUndefined()
   })
 
-  it("returns the first value from key string equal to desired", () => {
+  it("returns the first element whose key string value equals desired", () => {
     const arr = [{ x: 1 }, { x: 2 }, { x: 3 }]
-    expect(findClosest(arr, 2, { comparator: "eq", key: "x" })).toBe(2)
+    expect(findClosest(arr, 2, { comparator: "eq", key: "x" })).toBe(arr[1])
     expect(findClosest(arr, 4, { comparator: "eq", key: "x" })).toBeUndefined()
   })
 
-  it("returns the first value from key number equal to desired", () => {
+  it("returns the first element whose key number value equals desired", () => {
     const arr = [[1], [2], [3]]
-    expect(findClosest(arr, 2, { comparator: "eq", key: 0 })).toBe(2)
+    expect(findClosest(arr, 2, { comparator: "eq", key: 0 })).toBe(arr[1])
     expect(findClosest(arr, 4, { comparator: "eq", key: 0 })).toBeUndefined()
   })
 
@@ -33,10 +33,10 @@ describe("findClosest (eq comparator)", () => {
     expect(findClosest([], 1, { comparator: "eq" })).toBeUndefined()
   })
 
-  it("returns first matching value if there are duplicates", () => {
+  it("returns first matching element if there are duplicates", () => {
     expect(findClosest([2, 2, 3], 2, { comparator: "eq" })).toBe(2)
     const arr = [{ v: 2 }, { v: 2 }]
-    expect(findClosest(arr, 2, { comparator: "eq", key: (e) => e.v })).toBe(2)
+    expect(findClosest(arr, 2, { comparator: "eq", key: (e) => e.v })).toBe(arr[0])
   })
 })
 
@@ -270,7 +270,19 @@ describe("findClosest", () => {
   it("passes options to underlying function", () => {
     const arr = [{ x: 1 }, { x: 10 }]
     expect(findClosest(arr, 8, { comparator: "diff", key: "x" })).toEqual({ x: 10 })
-    expect(findClosest(arr, 10, { comparator: "eq", key: "x" })).toBe(10)
+    expect(findClosest(arr, 10, { comparator: "eq", key: "x" })).toBe(arr[1])
+  })
+
+  it("ignores undefined values but coerces null values to 0", () => {
+    expect(findClosest([undefined, 10], 1)).toBe(10)
+    expect(findClosest([null, 10], 1)).toBe(null)
+    expect(findClosest([null, 5], -1, { comparator: "gt" })).toBe(null)
+    expect(findClosest([{ x: null }, { x: 10 }], 1, { key: "x" })).toEqual({ x: null })
+  })
+
+  it("does not coerce null values with eq", () => {
+    expect(findClosest([null], 0, { comparator: "eq" })).toBeUndefined()
+    expect(findClosest([null], null, { comparator: "eq" })).toBe(null)
   })
 })
 
@@ -306,6 +318,13 @@ describe("findMin", () => {
     expect(findMin([3, 1, 4, 2], { cutoff: 2 })).toBe(1)
     expect(findMin([3, 1, 4, 2], { cutoff: 1 })).toBeUndefined()
   })
+
+  it("ignores undefined values but coerces null values to 0", () => {
+    expect(findMin([undefined, 5])).toBe(5)
+    expect(findMin([null, 5])).toBe(null)
+    expect(findMin([null, -5])).toBe(-5)
+    expect(findMin([{ x: null }, { x: 5 }], { key: "x" })).toEqual({ x: null })
+  })
 })
 
 describe("findMax", () => {
@@ -339,6 +358,13 @@ describe("findMax", () => {
   it("respects cutoff", () => {
     expect(findMax([3, 1, 4, 2], { cutoff: 2 })).toBe(4)
     expect(findMax([3, 1, 4, 2], { cutoff: 4 })).toBeUndefined()
+  })
+
+  it("ignores undefined values but coerces null values to 0", () => {
+    expect(findMax([undefined, -5])).toBe(-5)
+    expect(findMax([null, -5])).toBe(null)
+    expect(findMax([null, 5])).toBe(5)
+    expect(findMax([{ x: null }, { x: -5 }], { key: "x" })).toEqual({ x: null })
   })
 })
 

@@ -1,6 +1,6 @@
 /**
  * Returns if the argument is an object: `typeof thing === "object" && thing !== null`.
- * This includes arrays as well as built-in objects that store state outside enumerable keys (Date, RegExp, Map, Set).
+ * This includes built-in objects that store state outside enumerable keys such as Array and Date.
  * See isPlainObject() to exclude those.
  * @param {any} thing
  * @returns {boolean}
@@ -10,34 +10,25 @@ export function isObject(thing) {
 }
 
 /**
- * Checks if the argument is a built-in object that has state outside of enumerable keys.
- * Within standard JS, this would be a: Array, Date, RegExp, Map, or Set.
- * Stateful built-in objects generally do not work cleanly with "Object" static methods such as Object.keys() or Object.assign().
- * @param {any} thing
- * @returns {boolean}
- */
-export function isStatefulBuiltinObject(thing) {
-  return (
-    Array.isArray(thing) ||
-    thing instanceof Date ||
-    thing instanceof RegExp ||
-    thing instanceof Map ||
-    thing instanceof Set
-  )
-}
-
-/**
- * Returns if the argument is a "plain" object: a non-array object that stores its state in enumerable keys.
- * See isStatefulObject() for explanation of objects that aren't plain objects.
+ * Returns if the argument is a "plain" object: an object that stores its state in enumerable keys.
+ * Specifically, this excludes: Array, Map, Set, RegExp, Error, Date.
  * @param {any} thing
  * @returns {boolean}
  */
 export function isPlainObject(thing) {
-  return isObject(thing) && !isStatefulBuiltinObject(thing)
+  return (
+    isObject(thing) &&
+    !Array.isArray(thing) &&
+    !(thing instanceof Map) &&
+    !(thing instanceof Set) &&
+    !(thing instanceof RegExp) &&
+    !(thing instanceof Error) &&
+    !(thing instanceof Date)
+  )
 }
 
 /**
- * Creates a new object with values created by calling callback on each of argument's values.
+ * Creates a new null-prototyped object with values created by calling callback on each of argument's values.
  * @param {Object} object
  * @param {MyUtil.ObjectMapper} callback
  *  Note if not changing value, should return value.
@@ -116,39 +107,22 @@ export function like(template) {
 
 /**
  * Copies the source recursively.
- * Does not preserve constructors of source or constructors of its keys' values,
- *   except for stateful built-ins, which are copied into equivalent new instances (see isStatefulBuiltinObject).
+ * Does not preserve constructors of source or constructors of its keys' values.
+ * All returned plain objects have null prototypes. See isPlainObject() for more info.
+ * Stateful built-ins and functions are copied by reference. Consider structuredClone() to handle stateful built-ins.
  * @template T
  * @param {T} source
  * @returns {T}
  */
 export function deepCopy(source) {
-  // check for stateful built-ins first
   if (Array.isArray(source)) {
     // @ts-ignore Doesn't understand returned as T
     return source.map(deepCopy)
   }
-  if (source instanceof Date) {
-    // @ts-ignore Doesn't understand returned as T
-    return new Date(source.getTime())
-  }
-  if (source instanceof RegExp) {
-    // @ts-ignore Doesn't understand returned as T
-    return new RegExp(source.source, source.flags)
-  }
-  if (source instanceof Map) {
-    // @ts-ignore Doesn't understand returned as T
-    return new Map([...source].map(([key, value]) => [deepCopy(key), deepCopy(value)]))
-  }
-  if (source instanceof Set) {
-    // @ts-ignore Doesn't understand returned as T
-    return new Set([...source].map(deepCopy))
-  }
   if (isPlainObject(source)) {
-    // custom class instances land here too (walked by key, losing their constructor - see above)
     return mapValues(source, deepCopy)
   }
-  // primitive or function
+  // primitive, function, stateful built-ins
   return source
 }
 
@@ -156,23 +130,31 @@ export function deepCopy(source) {
  * Deeply merges one or more source objects into a target object.
  * Specifically:
  *  For each enumerable key of a source object that is a direct property (not inherited),
- *    If the source key's values is a plain object and the target key's value is a plain object,
- *      recursively merge the two values.
- * Stateful built-in objects (including arrays) are never merged; they always replace the target's key's value outright.
+ *    If the source key's values is a plain object and the target key's own value is a plain object (not inherited),
+ *      recursively merge the two values. See isPlainObject() for more info.
+ *    Otherwise, write the source key's value directly into target object (using defineProperty, skipping setters).
  * @param {Object} target The target object that will receive the merged properties
- * @param {...Object} sources The source objects whose properties will be merged into the target
+ * @param {...Object} sources The source objects whose properties will be merged into the target.
+ *  Note that earlier sources can be modified by merging in later sources. Use deepMergeCopy() instead if that is an issue.
  * @returns {Object} The target object with the merged properties from all source objects
  */
 export function deepMerge(target, ...sources) {
   for (const source of sources) {
     const keys = Object.keys(source)
     for (const key of keys) {
-      const targetValue = target[key]
+      // don't merge into inherited properties that are objects
+      const targetValue = Object.hasOwn(target, key) ? target[key] : undefined
       const sourceValue = source[key]
       if (isPlainObject(targetValue) && isPlainObject(sourceValue)) {
         deepMerge(targetValue, sourceValue)
       } else {
-        target[key] = sourceValue
+        // always write directly to target (i.e. if key is "__proto__")
+        Object.defineProperty(target, key, {
+          value: sourceValue,
+          writable: true,
+          enumerable: true,
+          configurable: true,
+        })
       }
     }
   }
@@ -192,90 +174,13 @@ export function deepMergeCopy(target, ...sources) {
 }
 
 /**
- * Checks if two arrays are equal: same size and same keys and values. Assumes both arguments are arrays.
- * @param {Array} a
- * @param {Array} b
- * @param {(_a: any, _b: any) => boolean} compare Determines equality of values.
- *  By default, uses `Object.is` for a reference/primitive comparison.
- * @returns {boolean}
- */
-export function isArrayEqual(a, b, compare = Object.is) {
-  if (a.length !== b.length) {
-    return false
-  }
-  for (let i = 0; i < a.length; i++) {
-    if (!compare(a[i], b[i])) {
-      return false
-    }
-  }
-  return true
-}
-
-/**
- * Checks if two Dates are equal, by getTime(). Assumes both arguments are Dates.
- * @param {Date} a
- * @param {Date} b
- * @returns {boolean}
- */
-export function isDateEqual(a, b) {
-  return a.getTime() === b.getTime()
-}
-
-/**
- * Checks if two RegExps are equal, by source and flags. Assumes both arguments are RegExps.
- * @param {RegExp} a
- * @param {RegExp} b
- * @returns {boolean}
- */
-export function isRegExpEqual(a, b) {
-  return a.source === b.source && a.flags === b.flags
-}
-
-/**
- * Checks if two Maps are equal: same size and same keys and values. Assumes both arguments are Maps.
- * @param {Map} a
- * @param {Map} b
- * @param {(_a: any, _b: any) => boolean} compare Determines equality of values.
- *  By default, uses `Object.is` for a reference/primitive comparison.
- * @returns {boolean}
- */
-export function isMapEqual(a, b, compare = Object.is) {
-  if (a.size !== b.size) {
-    return false
-  }
-  for (const [key, value] of a) {
-    if (!b.has(key) || !compare(value, b.get(key))) {
-      return false
-    }
-  }
-  return true
-}
-
-/**
- * Checks if two Sets are equal: same size and membership. Assumes both arguments are Sets.
- * @param {Set} a
- * @param {Set} b
- * @returns {boolean}
- */
-export function isSetEqual(a, b) {
-  if (a.size !== b.size) {
-    return false
-  }
-  for (const value of a) {
-    if (!b.has(value)) {
-      return false
-    }
-  }
-  return true
-}
-
-/**
  * Deeply compares two values to determine if they are equal.
- * Objects compared recursively by their properties and elements.
- * Stateful built-ins are compared with bespoke isXXXEqual() logic (see isStatefulBuiltinObject).
- * Primitives are compared with strict equality.
- * Caveats:
- *  Any `Symbol` keys in the arguments are ignored (Object.keys only returns string keys).
+ * Primitives are compared with strict equality. NaN can deeply equal NaN.
+ * Date objects are compared explicitly based on .getTime().
+ * All non-Date objects are simply compared recursively by their enumerable properties.
+ * Additionally, arrays can only ever equal other arrays (i.e [] !== {}).
+ * There is no exclusion of other stateful built-in classes such as Map, Set, RegExp, or Error.
+ *  These will equal each other and {} since they don't have enumerable properties.
  * @param {any} a The first value to compare
  * @param {any} b The second value to compare
  * @returns {boolean} True if the values are deeply equal, false otherwise
@@ -285,23 +190,16 @@ export function deepEqual(a, b) {
   if (a === b) {
     return true
   }
-  // check for stateful built-ins first
-  if (Array.isArray(a) || Array.isArray(b)) {
-    return Array.isArray(a) && Array.isArray(b) && isArrayEqual(a, b, deepEqual)
-  }
   if (a instanceof Date || b instanceof Date) {
-    return a instanceof Date && b instanceof Date && isDateEqual(a, b)
+    return a instanceof Date && b instanceof Date && a.getTime() === b.getTime()
   }
-  if (a instanceof RegExp || b instanceof RegExp) {
-    return a instanceof RegExp && b instanceof RegExp && isRegExpEqual(a, b)
-  }
-  if (a instanceof Map || b instanceof Map) {
-    return a instanceof Map && b instanceof Map && isMapEqual(a, b, deepEqual)
-  }
-  if (a instanceof Set || b instanceof Set) {
-    return a instanceof Set && b instanceof Set && isSetEqual(a, b)
+  if (typeof a === "number" && typeof b === "number") {
+    return isNaN(a) && isNaN(b)
   }
   if (!isObject(a) || !isObject(b)) {
+    return false
+  }
+  if ((Array.isArray(a) && !Array.isArray(b)) || (Array.isArray(b) && !Array.isArray(a))) {
     return false
   }
   const keysA = Object.keys(a)

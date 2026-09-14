@@ -61,22 +61,16 @@ JSDoc in `src/` for full parameter details.
 | Function | Description |
 | --- | --- |
 | `isObject` | Checks whether a value is a non-null object. |
-| `isStatefulBuiltinObject` | Checks whether a value is an array, Date, RegExp, Map, or Set. |
-| `isPlainObject` | Checks whether a value is an object other than an array, Date, RegExp, Map, or Set. |
+| `isPlainObject` | Checks whether a value is an object other than an array, Date, RegExp, Map, Set, or Error. |
 | `mapValues` | Creates a new object by mapping each value through a callback. |
 | `mutateValues` | Mutates an object in place by mapping each value through a callback. |
 | `deleteUndefinedValues` | Mutates an object by removing keys whose value is `undefined`. |
 | `via` | Creates a function that reads a given key from an object. |
 | `like` | Creates a predicate function that checks an object matches a template's key/values. |
-| `deepCopy` | Recursively deep-copies an array or object. |
+| `deepCopy` | Recursively deep-copies arrays and plain objects; other values are shared by reference. |
 | `deepMerge` | Recursively merges source objects into a target object. |
 | `deepMergeCopy` | Deep-copies and merges source objects into a target without mutating the sources. |
 | `deepEqual` | Recursively compares two values for deep equality. |
-| `isArrayEqual` | Checks whether two values are equal arrays, given a value-comparator function. |
-| `isDateEqual` | Checks whether two values are equal Dates, by `getTime()`. |
-| `isRegExpEqual` | Checks whether two values are equal RegExps, by source and flags. |
-| `isMapEqual` | Checks whether two values are equal Maps, given a value-comparator function. |
-| `isSetEqual` | Checks whether two values are equal Sets, by size and membership. |
 | `isClass` | Checks whether a function is a class declaration. |
 
 ### Promise — `@tim-code/my-util/promise`

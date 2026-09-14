@@ -12,14 +12,14 @@ function findEq(array, desired, { key } = {}) {
       const element = array[i]
       const value = key(element, i, array)
       if (value === desired) {
-        return value
+        return element
       }
     }
   } else if (typeof key === "number" || typeof key === "string") {
     for (const element of array) {
       const value = element[key]
       if (value === desired) {
-        return value
+        return element
       }
     }
   } else {
@@ -104,7 +104,10 @@ function findClosestLTE(array, desired, { key, cutoff = -Infinity } = {}) {
     for (let i = 0; i < array.length; i++) {
       const element = array[i]
       const value = key(element, i, array)
-      if (value <= desired && (value > cutoff || (value === cutoff && closest === undefined))) {
+      if (
+        value <= desired &&
+        (value > cutoff || (value === cutoff && closest === undefined))
+      ) {
         closest = element
         cutoff = value
       }
@@ -112,14 +115,20 @@ function findClosestLTE(array, desired, { key, cutoff = -Infinity } = {}) {
   } else if (typeof key === "number" || typeof key === "string") {
     for (const element of array) {
       const value = element[key]
-      if (value <= desired && (value > cutoff || (value === cutoff && closest === undefined))) {
+      if (
+        value <= desired &&
+        (value > cutoff || (value === cutoff && closest === undefined))
+      ) {
         closest = element
         cutoff = value
       }
     }
   } else {
     for (const value of array) {
-      if (value <= desired && (value > cutoff || (value === cutoff && closest === undefined))) {
+      if (
+        value <= desired &&
+        (value > cutoff || (value === cutoff && closest === undefined))
+      ) {
         closest = value
         cutoff = value
       }
@@ -166,7 +175,10 @@ function findClosestGTE(array, desired, { key, cutoff = Infinity } = {}) {
     for (let i = 0; i < array.length; i++) {
       const element = array[i]
       const value = key(element, i, array)
-      if (value >= desired && (value < cutoff || (value === cutoff && closest === undefined))) {
+      if (
+        value >= desired &&
+        (value < cutoff || (value === cutoff && closest === undefined))
+      ) {
         closest = element
         cutoff = value
       }
@@ -174,14 +186,20 @@ function findClosestGTE(array, desired, { key, cutoff = Infinity } = {}) {
   } else if (typeof key === "number" || typeof key === "string") {
     for (const element of array) {
       const value = element[key]
-      if (value >= desired && (value < cutoff || (value === cutoff && closest === undefined))) {
+      if (
+        value >= desired &&
+        (value < cutoff || (value === cutoff && closest === undefined))
+      ) {
         closest = element
         cutoff = value
       }
     }
   } else {
     for (const value of array) {
-      if (value >= desired && (value < cutoff || (value === cutoff && closest === undefined))) {
+      if (
+        value >= desired &&
+        (value < cutoff || (value === cutoff && closest === undefined))
+      ) {
         closest = value
         cutoff = value
       }
@@ -192,7 +210,7 @@ function findClosestGTE(array, desired, { key, cutoff = Infinity } = {}) {
 
 /**
  * Find the closest element in an array. If there is a tie, then returns the first matching element by order in the array.
- * If some values are undefined or null, they will be ignored. If no element is found, returns undefined.
+ * undefined values are ignored; null values are coerced to 0 (except for "eq"). If no element is found, returns undefined.
  * If using for strings, need to specify different values for "cutoff" and "comparator".
  *  "~" and "" are good cutoff string values for gt/gte and lt/lte respectively.
  * @template T
@@ -236,7 +254,8 @@ export function findClosest(array, value, options = {}) {
 }
 
 /**
- * Find the minimum value in an array. undefined or null values are ignored.
+ * Find the minimum value in an array.
+ * undefined values are ignored; null values are coerced to 0.
  * @template T
  * @param {Array<T>} array
  * @param {Object} $1
@@ -279,7 +298,8 @@ export function findMin(array, { key, cutoff = Infinity } = {}) {
 }
 
 /**
- * Find the maximum value in an array. undefined or null values are ignored.
+ * Find the maximum value in an array.
+ * undefined values are ignored; null values are coerced to 0.
  * @template T
  * @param {Array<T>} array
  * @param {Object} $1

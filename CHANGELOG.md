@@ -1,5 +1,66 @@
 # Changelog
 
+## [1.0.1]
+
+### find.js
+
+- `findClosest()` with `comparator: "eq"` and a `key` now returns the
+  matching *element*, consistent with every other comparator. Previously
+  it returned the key's value (`findClosest([{ a: 1 }], 1, { key: "a",
+  comparator: "eq" })` was `1`, is now `{ a: 1 }`).
+- Corrected the docs for `findClosest()`, `findMin()`, and `findMax()`:
+  `undefined` values are ignored, but `null` values are coerced to `0`
+  (except with `comparator: "eq"`, which uses `===`). They previously
+  claimed `null` values were ignored.
+
+### object.js
+
+- **Security:** `deepMerge()` (and so `deepMergeCopy()`) is no longer
+  vulnerable to prototype pollution. A source with a `__proto__` own key
+  (e.g. from `JSON.parse`) could previously write into `Object.prototype`
+  or replace the target's prototype. Two changes fix this:
+  - It only recurses into the target's *own* properties. Before, an
+    inherited plain object (including `Object.prototype` via `__proto__`,
+    or a shared `defaults` object via `Object.create(defaults)`) was
+    merged into, which changed the shared object.
+  - It writes values with `Object.defineProperty()` instead of assignment.
+    A `__proto__` key becomes an ordinary own property, and setters on the
+    target are not invoked.
+- `deepMerge()` now documents that merging a later source can change
+  nested objects that an earlier source contributed by reference; use
+  `deepMergeCopy()` to avoid that.
+- `deepCopy()` now copies only arrays and plain objects. `Date`, `RegExp`,
+  `Map`, `Set`, and `Error` instances (like primitives and functions) are
+  returned as-is and shared by reference, instead of being copied into new
+  instances.
+- `deepEqual()` no longer has dedicated `RegExp`, `Map`, or `Set` logic;
+  those objects are compared by their enumerable own keys like any other
+  object, so they generally equal each other and `{}`. `Date`s are still
+  compared by `getTime()`, and arrays still only equal other arrays.
+  `NaN` now deeply equals `NaN`.
+- `isPlainObject()` now also returns `false` for `Error` instances.
+- Removed `isStatefulBuiltinObject`, `isArrayEqual`, `isDateEqual`,
+  `isRegExpEqual`, `isMapEqual`, and `isSetEqual`, which were added in
+  1.0.0.
+
+### promise.js
+
+- Documented that `allSettled()` passes the callback an index and array
+  relative to the current parallel batch (not the whole iterable), and
+  that a synchronous throw from a non-async callback is not collected
+  into `errors` but propagates.
+
+### time.js
+
+- `isDateTimeString()` and `isUTCString()` now return `false` when the
+  separator appears more than once. Previously trailing content was
+  ignored (`isDateTimeString("2024-01-01T10:00:00Tgarbage")` was `true`).
+- `getTimeRange()` no longer throws. It now stops as soon as a step would
+  wrap past midnight or not advance (e.g. a zero step), returning the
+  times computed so far. Previously, a range whose next step crossed
+  midnight threw, so `getTimeRange("00:00", "23:59")` and
+  `getTimeRange("09:00", "23:59")` failed.
+
 ## [1.0.0]
 
 ### find.js

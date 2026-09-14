@@ -82,7 +82,9 @@ export async function sleep(ms) {
  *  If false (default), will process all elements in the array (like Promise.allSettled()).
  * @param {boolean=} $1.throws If true, will collect error messages, if any, together into one PromiseAllError object and throw it.
  *  Sets the PromiseAllError's stack from one of the collected errors, if available.
- * @param {MyUtil.Mapper<T, R>} callback Default is identity function to enable passing promises as "array".
+ * @param {MyUtil.Mapper<T, Promise<R>>} callback Default is identity function, which enables passing promises as "array".
+ *  Passed index and array to callback are relative to batch being done in parallel (not relative to iterable/array).
+ *  It's assumed that callback is async. If not and callback throws, error will not be handled by allSettled and will bubble up.
  * @returns {Promise<{results: Array<PromiseSettledResult<R>>, values: Array<R|undefined>, returned: Array<R>, errors: Array<any>}>}
  */
 export async function allSettled(
@@ -95,11 +97,11 @@ export async function allSettled(
   let values = []
   const errors = []
   // @ts-ignore Assume iterable exists
-  const chunked = chunk(iterable, limit)
-  for (const elements of chunked) {
-    const promises = elements.map(callback)
-    const chunkResults = await Promise.allSettled(promises)
-    for (const result of chunkResults) {
+  const batches = chunk(iterable, limit)
+  for (const batch of batches) {
+    const promises = batch.map(callback)
+    const batchResults = await Promise.allSettled(promises)
+    for (const result of batchResults) {
       // @ts-ignore Add undefined values if rejected
       const { value, status, reason } = result
       results.push(result)
@@ -113,7 +115,7 @@ export async function allSettled(
     if (abort && errors.length) {
       break
     }
-    await limiter?.(elements.length)
+    await limiter?.(batch.length)
   }
   if (throws && errors.length) {
     const string = errors.map((error) => error?.message ?? error).join("; ")

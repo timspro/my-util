@@ -26,7 +26,8 @@ describe("poll", () => {
   })
 
   it("resolves after several attempts when callback returns undefined/null/false before a value", async () => {
-    const cb = vi.fn()
+    const cb = vi
+      .fn()
       .mockReturnValueOnce(undefined)
       .mockReturnValueOnce(null)
       .mockReturnValueOnce(false)
@@ -105,7 +106,8 @@ describe("poll", () => {
   })
 
   it("resolves if callback returns a value before reaching max attempts", async () => {
-    const cb = vi.fn()
+    const cb = vi
+      .fn()
       .mockReturnValueOnce(undefined)
       .mockReturnValueOnce(undefined)
       .mockReturnValueOnce(5)
@@ -238,7 +240,8 @@ describe("allSettled", () => {
 
   it("returns early if abort=true and any error occurs", async () => {
     const arr = [1, 2, 3, 4, 5, 6]
-    const cb = vi.fn()
+    const cb = vi
+      .fn()
       .mockImplementation((x) => (x === 2 || x === 4 ? Promise.reject(`fail${x}`) : x))
     const result = await allSettled({ array: arr, limit: 2, abort: true }, cb)
     expect(result.values.length).toBe(2)
@@ -278,6 +281,33 @@ describe("allSettled", () => {
     expect(thrown).toBeInstanceOf(PromiseAllError)
     expect(thrown.message).toBe("e1; third")
     expect(thrown.stack).toBe(e1.stack)
+  })
+
+  it("passes callback an index and array relative to the current batch", async () => {
+    const calls = []
+    await allSettled(
+      { array: ["a", "b", "c", "d", "e"], limit: 2 },
+      async (element, index, batch) => {
+        calls.push([element, index, [...batch]])
+      }
+    )
+    expect(calls).toEqual([
+      ["a", 0, ["a", "b"]],
+      ["b", 1, ["a", "b"]],
+      ["c", 0, ["c", "d"]],
+      ["d", 1, ["c", "d"]],
+      ["e", 0, ["e"]],
+    ])
+  })
+
+  it("does not collect synchronous throws from a non-async callback", async () => {
+    const cb = (x) => {
+      if (x === 2) {
+        throw new Error("sync")
+      }
+      return x
+    }
+    await expect(allSettled({ array: [1, 2, 3] }, cb)).rejects.toThrow("sync")
   })
 })
 

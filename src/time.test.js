@@ -381,6 +381,12 @@ describe("isDateTimeString", () => {
     expect(isDateTimeString("2024-06-01 12:34:56", { separator: " " })).toBe(true)
     expect(isDateTimeString("2024-06-01T12:34:56", { separator: " " })).toBe(false)
   })
+
+  test("rejects strings where the separator appears more than once", () => {
+    expect(isDateTimeString("2024-06-01T12:34:56T")).toBe(false)
+    expect(isDateTimeString("2024-06-01T12:34:56Tgarbage")).toBe(false)
+    expect(isDateTimeString("2024-06-01 12:34:56 extra", { separator: " " })).toBe(false)
+  })
 })
 
 describe("isUTCString", () => {
@@ -398,6 +404,7 @@ describe("isUTCString", () => {
     expect(isUTCString("2024-06-01T12:34:56+00:00")).toBe(false) // offset not supported
     expect(isUTCString("2024-06-01T12:34:56.123Z")).toBe(false) // milliseconds not supported
     expect(isUTCString("2024-06-01 12:34:56Z")).toBe(false) // wrong separator
+    expect(isUTCString("2024-06-01T12:34:56TjunkZ")).toBe(false) // repeated separator
   })
 })
 
@@ -519,29 +526,6 @@ describe("getTimeRange", () => {
     expect(getTimeRange("12:00", "12:02")).toEqual(["12:00:00", "12:01:00", "12:02:00"])
   })
 
-  test("throws instead of looping forever when the step is zero", () => {
-    expect(() => getTimeRange("12:00:00", "12:00:00", { hours: 0, minutes: 0 })).toThrow(
-      "adding 0h 0m caused the time range to cycle back to the start time (12:00:00)"
-    )
-  })
-
-  test("throws instead of looping forever when the step evenly divides 24 hours", () => {
-    expect(() => getTimeRange("12:00:00", "12:00:00", { hours: 24, minutes: 0 })).toThrow(
-      /cycle back to the start time/u
-    )
-    // end must stay reachable long enough for the range to complete the full 8h*3 = 24h cycle
-    expect(() => getTimeRange("00:00:00", "20:00:00", { hours: 8, minutes: 0 })).toThrow(
-      /cycle back to the start time/u
-    )
-  })
-
-  test("throws instead of silently wrapping when the range reaches exactly midnight", () => {
-    // Per the documented caveat, this doesn't work across day: stepping one minute past
-    // "23:59:00" wraps to "00:00:00", which is still <= end lexically, so the range would
-    // otherwise loop for (up to) another full day before ever exceeding `end`.
-    expect(() => getTimeRange("23:58:00", "23:59:00")).toThrow(/cycle back to the start time/u)
-  })
-
   test("does not throw for a normal range that never reaches midnight", () => {
     expect(() => getTimeRange("23:00:00", "23:05:00")).not.toThrow()
     expect(getTimeRange("23:00:00", "23:05:00")).toEqual([
@@ -551,6 +535,50 @@ describe("getTimeRange", () => {
       "23:03:00",
       "23:04:00",
       "23:05:00",
+    ])
+  })
+
+  test("stops instead of wrapping past midnight", () => {
+    expect(getTimeRange("23:58:00", "23:59:00")).toEqual(["23:58:00", "23:59:00"])
+    expect(getTimeRange("20:00:00", "23:00:00", { hours: 5, minutes: 0 })).toEqual([
+      "20:00:00",
+    ])
+  })
+
+  test("stops when a step wraps past midnight to a time after start", () => {
+    expect(getTimeRange("01:00:00", "23:00:00", { hours: 5, minutes: 0 })).toEqual([
+      "01:00:00",
+      "06:00:00",
+      "11:00:00",
+      "16:00:00",
+      "21:00:00",
+    ])
+  })
+
+  test("returns a full day of times", () => {
+    const minutes = getTimeRange("00:00:00", "23:59:00")
+    expect(minutes).toHaveLength(1440)
+    expect(minutes[0]).toBe("00:00:00")
+    expect(minutes.at(-1)).toBe("23:59:00")
+
+    const hours = getTimeRange("00:00:00", "23:00:00", { hours: 1, minutes: 0 })
+    expect(hours).toHaveLength(24)
+    expect(hours.at(-1)).toBe("23:00:00")
+
+    expect(getTimeRange("09:00:00", "23:59:00")).toHaveLength(900)
+    expect(getTimeRange("00:00:00", "20:00:00", { hours: 8, minutes: 0 })).toEqual([
+      "00:00:00",
+      "08:00:00",
+      "16:00:00",
+    ])
+  })
+
+  test("returns only the start time when the step does not advance", () => {
+    expect(getTimeRange("12:00:00", "13:00:00", { hours: 0, minutes: 0 })).toEqual([
+      "12:00:00",
+    ])
+    expect(getTimeRange("12:00:00", "13:00:00", { hours: 24, minutes: 0 })).toEqual([
+      "12:00:00",
     ])
   })
 })
